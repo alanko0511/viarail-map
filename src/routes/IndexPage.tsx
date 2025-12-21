@@ -1,8 +1,10 @@
 import {
   Alert,
+  Anchor,
   Badge,
   Button,
   Center,
+  Divider,
   Grid,
   Group,
   Paper,
@@ -200,7 +202,6 @@ export const IndexPage = () => {
             searchable
             clearable
           />
-
           {selectedTrain ? (
             <ScrollArea style={{ flex: 1 }}>
               <Stack gap="xs" mb="md">
@@ -324,6 +325,29 @@ export const IndexPage = () => {
               </Text>
             </Center>
           )}
+          <Divider />
+          <Stack gap="4px">
+            <Text size="xs">
+              GitHub:{" "}
+              <Anchor href="https://github.com/alanko0511/viarail-map" target="_blank">
+                alanko0511/viarail-map
+              </Anchor>
+            </Text>
+            <Text size="xs">
+              Data source:{" "}
+              <Anchor href="https://tsimobile.viarail.ca/" target="_blank">
+                tsimobile.viarail.ca
+              </Anchor>{" "}
+              (VIA Rail Canada)
+            </Text>
+            <Text size="xs">
+              The project is not affiliated with VIA Rail Canada. The data is for informational purposes only. Check out{" "}
+              <Anchor href="https://www.viarail.ca/" target="_blank">
+                viarail.ca
+              </Anchor>{" "}
+              for the latest news and information about your journey.
+            </Text>
+          </Stack>
         </Stack>
       </Grid.Col>
       <Grid.Col span={9}>
