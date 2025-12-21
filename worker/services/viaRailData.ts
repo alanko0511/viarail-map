@@ -67,6 +67,8 @@ export const getViaRailData = async () => {
   const response = await ky
     .get("https://tsimobile.viarail.ca/data/allData.json", {
       headers: {
+        // The API is behind AWS Cloudfront and blocks requests when no user-agent is provided, so we need to provide a fake one.
+        // I'm using the one I saw in the browser's developer tools to make it look like a real browser request.
         "user-agent":
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
       },
