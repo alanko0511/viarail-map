@@ -1,12 +1,15 @@
-export default {
-  fetch(request) {
-    const url = new URL(request.url);
+import { Hono } from "hono";
+import { getViaRailData } from "./services/viaRailData";
 
-    if (url.pathname.startsWith("/api/")) {
-      return Response.json({
-        name: "Cloudflare",
-      });
-    }
-		return new Response(null, { status: 404 });
-  },
-} satisfies ExportedHandler<Env>;
+const server = new Hono().get("/trainData", async (c) => {
+  const data = await getViaRailData();
+
+  return c.json({
+    attribution: `Copyright © ${new Date().getFullYear()} VIA Rail Canada Inc.`,
+    data,
+  });
+});
+
+export default server;
+
+export type AppType = typeof server;

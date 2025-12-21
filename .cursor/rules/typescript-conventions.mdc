@@ -1,0 +1,206 @@
+---
+description: TypeScript coding conventions for this project
+alwaysApply: true
+---
+
+# TypeScript Coding Conventions
+
+## Function Declarations
+
+**Always use arrow functions** for function declarations, UNLESS:
+
+- You're creating a class method
+- Access to `this` is required (e.g., event handlers that need context binding)
+
+### ✅ Correct Examples:
+
+```typescript
+// Regular functions - use arrow functions
+const fetchData = async (id: string) => {
+  return await api.get(id);
+};
+
+const calculateTotal = (items: Item[]): number => {
+  return items.reduce((sum, item) => sum + item.price, 0);
+};
+
+// Class methods - use regular method syntax
+class UserService {
+  private userId: string;
+
+  constructor(userId: string) {
+    this.userId = userId;
+  }
+
+  async fetchUser() {
+    return await api.get(this.userId);
+  }
+}
+```
+
+### ❌ Incorrect Examples:
+
+```typescript
+// DON'T use function keyword for standalone functions
+function fetchData(id: string) {
+  return api.get(id);
+}
+
+// DON'T use function keyword for exports
+export function calculateTotal(items: Item[]): number {
+  return items.reduce((sum, item) => sum + item.price, 0);
+}
+```
+
+## Type Imports
+
+**Always use explicit `type` keyword** when importing types, interfaces, or type aliases.
+
+This can be done in two ways:
+
+1. `import type { ... }` - for importing only types
+2. `import { type ... }` - for mixing types and values in the same import
+
+### ✅ Correct Examples:
+
+```typescript
+// Option 1: Separate type imports
+import type { User, UserRole } from "./types";
+import { getUser } from "./api";
+
+// Option 2: Inline type keyword (when mixing types and values)
+import { type User, type UserRole, getUser } from "./userModule";
+
+// Type-only import
+import type { ReactNode } from "react";
+
+// Mixed import with inline type keywords
+import { useState, type FC, type PropsWithChildren } from "react";
+```
+
+### ❌ Incorrect Examples:
+
+```typescript
+// DON'T omit type keyword
+import { User, UserRole } from "./types";
+
+// DON'T mix without type keyword
+import { User, getUser } from "./userModule";
+```
+
+## Type Definitions
+
+**Always use `type` for type definitions** instead of `interface`.
+
+While TypeScript supports both `type` and `interface`, prefer `type` for consistency throughout the codebase.
+
+### ✅ Correct Examples:
+
+```typescript
+// Use type for object shapes
+type User = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+// Use type for unions
+type Status = "pending" | "active" | "inactive";
+
+// Use type for intersections
+type UserWithRole = User & {
+  role: "admin" | "user";
+};
+
+// Use type for function signatures
+type FetchUser = (id: string) => Promise<User>;
+
+// Use type for complex types
+type ApiResponse<T> = {
+  data: T;
+  error?: string;
+  status: number;
+};
+```
+
+### ❌ Incorrect Examples:
+
+```typescript
+// DON'T use interface
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+// DON'T use interface for extending
+interface UserWithRole extends User {
+  role: "admin" | "user";
+}
+```
+
+## React Component/Hook Props
+
+**Inline props types directly in the component definition**, unless the type will definitely be shared outside of the file.
+
+Avoid creating separate `Props` types for components/hooks when the type is only used locally.
+
+### ✅ Correct Examples:
+
+```typescript
+// Inline props for single-use component
+const Button = (props: { label: string; onClick: () => void }) => {
+  return <button onClick={props.onClick}>{props.label}</button>;
+};
+
+// Another example
+const UserCard = (props: { name: string; email: string }) => {
+  return (
+    <div>
+      <h2>{props.name}</h2>
+      <p>{props.email}</p>
+    </div>
+  );
+};
+
+// Shared type (exported for use elsewhere)
+export type ButtonProps = {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+};
+
+export const Button = (props: ButtonProps) => {
+  return <button onClick={props.onClick}>{props.label}</button>;
+};
+```
+
+### ❌ Incorrect Examples:
+
+```typescript
+// DON'T create separate Props type if only used locally
+type Props = {
+  hello: string;
+};
+
+const Comp = ({ hello }: Props) => {
+  return <div>{hello}</div>;
+};
+
+// DON'T create Props type for single-use hooks
+type UseCounterProps = {
+  initialValue: number;
+};
+
+const useCounter = ({ initialValue }: UseCounterProps) => {
+  const [count, setCount] = useState(initialValue);
+  return { count, setCount };
+};
+```
+
+## Benefits
+
+- **Arrow functions**: Cleaner syntax, no `this` binding issues, consistent code style
+- **Type imports**: Better tree-shaking, clearer intent, faster TypeScript compilation, prevents runtime side effects from type imports
+- **Type over interface**: More flexible (supports unions, intersections, primitives), consistent syntax, better for composition
+- **Inline props**: Reduces unnecessary type declarations, improves code locality, clearer when types are truly reusable
