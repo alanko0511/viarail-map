@@ -1,5 +1,5 @@
-import { Button, Grid, SegmentedControl, useMantineTheme } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
+import { Button, Grid, SegmentedControl, Tooltip, useMantineTheme } from "@mantine/core";
+import { useHover, useMediaQuery } from "@mantine/hooks";
 import { IconTrainFilled } from "@tabler/icons-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useState } from "react";
@@ -33,6 +33,7 @@ const TrainMarker = (props: {
 }) => {
   const { trainId, train, isSelected, onSelect } = props;
   const { current: map } = useMap();
+  const { hovered, ref } = useHover();
 
   const handleClick = () => {
     onSelect(trainId);
@@ -45,18 +46,29 @@ const TrainMarker = (props: {
     }
   };
 
+  const tooltipLabel = train.speed !== undefined ? `${trainId} • ${Math.round(train.speed)} km/h` : trainId;
+
   return (
     <Marker longitude={train.lng!} latitude={train.lat!} anchor="center">
-      <Button
-        color={isSelected ? "blue" : "yellow"}
-        radius="xl"
-        leftSection={<IconTrainFilled size={16} />}
-        onClick={handleClick}
-        style={{ cursor: "pointer" }}
-        size="compact-sm"
-      >
-        {trainId}
-      </Button>
+      <Tooltip label={tooltipLabel} opened={hovered || isSelected} withArrow>
+        <Button
+          ref={ref}
+          color={isSelected ? "blue" : "yellow"}
+          radius="xl"
+          onClick={handleClick}
+          style={{
+            cursor: "pointer",
+            transform:
+              train.direction !== null && train.direction !== undefined
+                ? `rotate(${train.direction - 90}deg)`
+                : undefined,
+            transition: "transform 0.3s ease",
+          }}
+          size="compact-sm"
+        >
+          <IconTrainFilled size={16} />
+        </Button>
+      </Tooltip>
     </Marker>
   );
 };
