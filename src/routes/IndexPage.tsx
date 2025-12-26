@@ -1,6 +1,6 @@
 import { Button, Grid, SegmentedControl, Tooltip, useMantineTheme } from "@mantine/core";
 import { useHover, useMediaQuery } from "@mantine/hooks";
-import { IconTrainFilled } from "@tabler/icons-react";
+import { IconArrowUp } from "@tabler/icons-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useState } from "react";
 import Map, { GeolocateControl, Marker, useMap } from "react-map-gl/maplibre";
@@ -46,27 +46,36 @@ const TrainMarker = (props: {
     }
   };
 
-  const tooltipLabel = train.speed !== undefined ? `${trainId} • ${Math.round(train.speed)} km/h` : trainId;
-
   return (
     <Marker longitude={train.lng!} latitude={train.lat!} anchor="center">
-      <Tooltip label={tooltipLabel} opened={hovered || isSelected} withArrow>
+      <Tooltip
+        label={train.speed ? `${Math.round(train.speed)} km/h` : ""}
+        disabled={!train.speed}
+        opened={hovered || isSelected}
+        withArrow
+      >
         <Button
           ref={ref}
           color={isSelected ? "blue" : "yellow"}
-          radius="xl"
+          radius="sm"
           onClick={handleClick}
           style={{
             cursor: "pointer",
-            transform:
-              train.direction !== null && train.direction !== undefined
-                ? `rotate(${train.direction - 90}deg)`
-                : undefined,
-            transition: "transform 0.3s ease",
           }}
-          size="compact-sm"
+          size="compact-xs"
+          rightSection={
+            train.direction && (
+              <IconArrowUp
+                size={14}
+                style={{
+                  transform: `rotate(${train.direction}deg)`,
+                  transition: "transform 0.3s ease",
+                }}
+              />
+            )
+          }
         >
-          <IconTrainFilled size={16} />
+          {props.trainId}
         </Button>
       </Tooltip>
     </Marker>
