@@ -5,6 +5,7 @@ import {
   Center,
   Divider,
   Group,
+  List,
   ScrollArea,
   Select,
   Spoiler,
@@ -219,15 +220,24 @@ export const TimelineDetails = (props: {
             alanko0511/viarail-map
           </Anchor>
         </Text>
+        <Text size="xs">Data source:</Text>
+        <List size="xs">
+          <List.Item>
+            <Anchor href="https://tsimobile.viarail.ca/" target="_blank" size="xs">
+              VIA Rail Canada
+            </Anchor>{" "}
+            (live train data)
+          </List.Item>
+          <List.Item>
+            <Anchor href="https://map.railfans.ca/" target="_blank" size="xs">
+              RailFansMap
+            </Anchor>{" "}
+            (route data)
+          </List.Item>
+        </List>
+
         <Text size="xs">
-          Data source:{" "}
-          <Anchor href="https://tsimobile.viarail.ca/" target="_blank">
-            tsimobile.viarail.ca
-          </Anchor>{" "}
-          (VIA Rail Canada)
-        </Text>
-        <Text size="xs">
-          The project is not affiliated with VIA Rail Canada. The data is for informational purposes only. Check out{" "}
+          The project is not affiliated with VIA Rail Canada. Check out{" "}
           <Anchor href="https://www.viarail.ca/" target="_blank">
             viarail.ca
           </Anchor>{" "}

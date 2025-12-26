@@ -1,9 +1,10 @@
 import { Button, Grid, SegmentedControl, Tooltip, useMantineTheme } from "@mantine/core";
 import { useHover, useMediaQuery } from "@mantine/hooks";
 import { IconArrowUp } from "@tabler/icons-react";
-import "maplibre-gl/dist/maplibre-gl.css";
+import type { FeatureCollection } from "geojson";
+import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useMemo, useState } from "react";
-import Map, { GeolocateControl, Marker, useMap } from "react-map-gl/maplibre";
+import Map, { GeolocateControl, Layer, Marker, Source, useMap } from "react-map-gl/mapbox";
 import { useLocation, useParams } from "wouter";
 import { getLogger, isStationCompleted } from "../../shared/utils";
 import type { Train } from "../../worker/services/viaRailData";
@@ -13,11 +14,28 @@ import { useViaRailData } from "../hooks/useViaRailData";
 const logger = getLogger("MapRenderer");
 
 const MAP_STYLES = {
-  openstreetmap: `https://api.maptiler.com/maps/streets/style.json?key=${import.meta.env.VITE_MAPTILER_SECRET_KEY}`,
-  satellite: `https://api.maptiler.com/maps/hybrid/style.json?key=${import.meta.env.VITE_MAPTILER_SECRET_KEY}`,
+  street: "mapbox://styles/mapbox/outdoors-v12",
+  light: "mapbox://styles/mapbox/light-v11",
+  satellite: "mapbox://styles/mapbox/satellite-v9",
 } as const;
 
 type MapStyleType = keyof typeof MAP_STYLES;
+
+// VIA Rail route files
+const VIARAIL_ROUTES = [
+  { id: "canadian", name: "Canadian", file: "/viarail/canadian.json" },
+  { id: "churchill", name: "Churchill", file: "/viarail/churchill.json" },
+  { id: "corridor", name: "Corridor", file: "/viarail/corridor.json" },
+  { id: "jonquiere", name: "Jonquière", file: "/viarail/jonquiere.json" },
+  { id: "montrealmaintenance", name: "Montreal Maintenance", file: "/viarail/montrealmaintenance.json" },
+  { id: "ocean", name: "Ocean", file: "/viarail/ocean.json" },
+  { id: "rupert", name: "Rupert", file: "/viarail/rupert.json" },
+  { id: "senneterre", name: "Senneterre", file: "/viarail/senneterre.json" },
+  { id: "torontomaintenance", name: "Toronto Maintenance", file: "/viarail/torontomaintenance.json" },
+  { id: "vancouvermaintenance", name: "Vancouver Maintenance", file: "/viarail/vancouvermaintenance.json" },
+  { id: "whiteriver", name: "White River", file: "/viarail/whiteriver.json" },
+  { id: "winnipegmaintenance", name: "Winnipeg Maintenance", file: "/viarail/winnipegmaintenance.json" },
+] as const;
 
 const DEFAULT_VIEW_STATE = {
   longitude: -75.695,
@@ -106,13 +124,115 @@ const MapController = (props: {
   return null;
 };
 
+type ViaRailGeoJSON = FeatureCollection & {
+  metadata?: {
+    id?: string;
+    color?: string;
+    name?: string;
+    [key: string]: unknown;
+  };
+};
+
+const ViaRailRoutes = () => {
+  const [routesData, setRoutesData] = useState<Record<string, ViaRailGeoJSON>>({});
+
+  useEffect(() => {
+    // Load all GeoJSON files
+    const loadRoutes = async () => {
+      const loaded: Record<string, ViaRailGeoJSON> = {};
+
+      for (const route of VIARAIL_ROUTES) {
+        try {
+          const response = await fetch(route.file);
+          const data = (await response.json()) as ViaRailGeoJSON;
+          loaded[route.id] = data;
+        } catch (error) {
+          logger("error", `Failed to load route ${route.id}:`, error);
+        }
+      }
+
+      setRoutesData(loaded);
+    };
+
+    loadRoutes();
+  }, []);
+
+  return (
+    <>
+      {Object.entries(routesData).map(([routeId, data]) => {
+        const routeColor = "#fab005";
+
+        return (
+          <Source key={routeId} id={routeId} type="geojson" data={data}>
+            {/* Rail line layer */}
+            <Layer
+              id={`${routeId}-line`}
+              type="line"
+              filter={["==", ["get", "type"], "alignment"]}
+              paint={{
+                "line-color": routeColor,
+                "line-width": 4,
+                "line-opacity": 0.8,
+              }}
+            />
+
+            <Layer
+              id={`${routeId}-tracks`}
+              type="line"
+              filter={["==", ["get", "type"], "tracks"]}
+              paint={{
+                "line-color": routeColor,
+                "line-width": 2,
+                "line-opacity": 0.2,
+              }}
+            />
+
+            {/* Station markers layer */}
+            <Layer
+              id={`${routeId}-stations`}
+              type="circle"
+              filter={["==", ["get", "type"], "station-label"]}
+              paint={{
+                "circle-radius": 4,
+                "circle-color": routeColor,
+                "circle-stroke-width": 1,
+                "circle-stroke-color": "#ffffff",
+              }}
+            />
+
+            {/* Station labels layer */}
+            <Layer
+              id={`${routeId}-labels`}
+              type="symbol"
+              filter={["==", ["get", "type"], "station-label"]}
+              minzoom={7}
+              layout={{
+                "text-field": ["get", "name"],
+                "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+                "text-size": 12,
+                "text-offset": [0, 0],
+                "text-anchor": "top",
+              }}
+              paint={{
+                "text-color": "#333333",
+                "text-halo-color": "#ffffff",
+                "text-halo-width": 2,
+              }}
+            />
+          </Source>
+        );
+      })}
+    </>
+  );
+};
+
 export const IndexPage = () => {
   const params = useParams<{ trainId?: string }>();
   const [, navigate] = useLocation();
   const theme = useMantineTheme();
   const isMdAndAbove = useMediaQuery(`(min-width: ${theme.breakpoints.md})`);
 
-  const [mapStyle, setMapStyle] = useState<MapStyleType>("openstreetmap");
+  const [mapStyle, setMapStyle] = useState<MapStyleType>("street");
   const selectedTrainId = params.trainId ?? null;
 
   const { data: viaRailData, error: trainError } = useViaRailData();
@@ -168,8 +288,9 @@ export const IndexPage = () => {
             value={mapStyle}
             onChange={(value) => setMapStyle(value as MapStyleType)}
             data={[
-              { label: "Street", value: "openstreetmap" },
-              { label: "Hybrid", value: "satellite" },
+              { label: "Street", value: "street" },
+              { label: "Light", value: "light" },
+              { label: "Satellite", value: "satellite" },
             ]}
             style={(theme) => ({
               position: "absolute",
@@ -179,11 +300,13 @@ export const IndexPage = () => {
             })}
           />
           <Map
+            mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
             initialViewState={DEFAULT_VIEW_STATE}
             style={{ width: "100%", height: "100%" }}
             mapStyle={MAP_STYLES[mapStyle]}
           >
             <MapController selectedTrainId={selectedTrainId} viaRailData={viaRailData} />
+            <ViaRailRoutes />
             <GeolocateControl
               position="bottom-left"
               trackUserLocation={false}
