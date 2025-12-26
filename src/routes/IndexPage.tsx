@@ -77,9 +77,11 @@ const TrainMarker = (props: {
           color={isSelected ? "blue" : "yellow"}
           radius="sm"
           onClick={handleClick}
-          style={{
+          style={(theme) => ({
             cursor: "pointer",
-          }}
+            boxShadow: theme.shadows.sm,
+            border: `1px solid ${theme.colors.yellow[8]}`,
+          })}
           size="compact-xs"
           rightSection={
             train.direction && (
