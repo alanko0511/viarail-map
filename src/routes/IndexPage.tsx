@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import Map, { GeolocateControl, Layer, Marker, Source, useMap } from "react-map-gl/mapbox";
 import { useLocation, useParams } from "wouter";
 import { getLogger, isStationCompleted } from "../../shared/utils";
-import type { Train } from "../../worker/services/viaRailData";
+import type { NormalizedTrain } from "../../shared/types";
 import { TimelineDetails } from "../components/TimelineDetails";
 import { useViaRailData } from "../hooks/useViaRailData";
 
@@ -44,20 +44,19 @@ const DEFAULT_VIEW_STATE = {
 } as const;
 
 const TrainMarker = (props: {
-  trainId: string;
-  train: Train;
+  train: NormalizedTrain;
   isSelected: boolean;
   onSelect: (trainId: string) => void;
 }) => {
-  const { trainId, train, isSelected, onSelect } = props;
+  const { train, isSelected, onSelect } = props;
   const { current: map } = useMap();
   const { hovered, ref } = useHover();
 
   const handleClick = () => {
-    onSelect(trainId);
-    if (train.lat && train.lng && map) {
+    onSelect(train.id);
+    if (map) {
       map.flyTo({
-        center: [train.lng, train.lat],
+        center: [train.location.lng, train.location.lat],
         zoom: 14,
         duration: 1500,
       });
@@ -65,10 +64,10 @@ const TrainMarker = (props: {
   };
 
   return (
-    <Marker longitude={train.lng!} latitude={train.lat!} anchor="center">
+    <Marker longitude={train.location.lng} latitude={train.location.lat} anchor="center">
       <Tooltip
-        label={train.speed ? `${Math.round(train.speed)} km/h` : ""}
-        disabled={!train.speed}
+        label={train.location.speed ? `${Math.round(train.location.speed)} km/h` : ""}
+        disabled={!train.location.speed}
         opened={hovered || isSelected}
         withArrow
       >
@@ -84,18 +83,18 @@ const TrainMarker = (props: {
           })}
           size="compact-xs"
           rightSection={
-            train.direction && (
+            train.location.direction && (
               <IconArrowUp
                 size={14}
                 style={{
-                  transform: `rotate(${train.direction}deg)`,
+                  transform: `rotate(${train.location.direction}deg)`,
                   transition: "transform 0.3s ease",
                 }}
               />
             )
           }
         >
-          {props.trainId}
+          {train.id}
         </Button>
       </Tooltip>
     </Marker>
@@ -104,24 +103,24 @@ const TrainMarker = (props: {
 
 const MapController = (props: {
   selectedTrainId: string | null;
-  viaRailData: Record<string, Train> | null | undefined;
+  trains: NormalizedTrain[];
 }) => {
-  const { selectedTrainId, viaRailData } = props;
+  const { selectedTrainId, trains } = props;
   const { current: map } = useMap();
 
   useEffect(() => {
-    if (!map || !selectedTrainId || !viaRailData) return;
+    if (!map || !selectedTrainId) return;
 
     // Fly to the selected train whenever it changes
-    const train = viaRailData[selectedTrainId];
-    if (train?.lat && train?.lng) {
+    const train = trains.find((t) => t.id === selectedTrainId);
+    if (train) {
       map.flyTo({
-        center: [train.lng, train.lat],
+        center: [train.location.lng, train.location.lat],
         zoom: 14,
         duration: 1500,
       });
     }
-  }, [map, selectedTrainId, viaRailData]);
+  }, [map, selectedTrainId, trains]);
 
   return null;
 };
@@ -247,24 +246,24 @@ export const IndexPage = () => {
     }
   };
 
-  const activeTrains = useMemo(() => {
-    return viaRailData
-      ? Object.entries(viaRailData).filter(([, train]) => train.lat !== undefined && train.lng !== undefined)
-      : [];
-  }, [viaRailData]);
+  // Data is already filtered - all trains have location
+  const trains = useMemo(() => viaRailData ?? [], [viaRailData]);
 
-  const selectedTrain = selectedTrainId && viaRailData ? viaRailData[selectedTrainId] : null;
+  const selectedTrain = useMemo(() => {
+    if (!selectedTrainId) return null;
+    return trains.find((t) => t.id === selectedTrainId) ?? null;
+  }, [selectedTrainId, trains]);
 
   const activeTimelineIndex = useMemo(() => {
     if (!selectedTrain) return 0;
-    if (!selectedTrain.departed) return 0;
-    if (selectedTrain.arrived) return selectedTrain.times.length - 1;
+    if (!selectedTrain.status.departed) return 0;
+    if (selectedTrain.status.arrived) return selectedTrain.times.length - 1;
 
     const now = new Date();
     let lastCompletedIndex = 0;
 
     for (let i = 0; i < selectedTrain.times.length; i++) {
-      if (isStationCompleted(selectedTrain.times[i], i, selectedTrain.times.length, now)) {
+      if (isStationCompleted(selectedTrain.times[i], now)) {
         lastCompletedIndex = i;
       }
     }
@@ -307,19 +306,18 @@ export const IndexPage = () => {
             style={{ width: "100%", height: "100%" }}
             mapStyle={MAP_STYLES[mapStyle]}
           >
-            <MapController selectedTrainId={selectedTrainId} viaRailData={viaRailData} />
+            <MapController selectedTrainId={selectedTrainId} trains={trains} />
             <ViaRailRoutes />
             <GeolocateControl
               position="bottom-left"
               trackUserLocation={false}
               onError={(e) => logger("warn", "Failed to get geolocation:", e)}
             />
-            {activeTrains.map(([trainId, train]) => (
+            {trains.map((train) => (
               <TrainMarker
-                key={trainId}
-                trainId={trainId}
+                key={train.id}
                 train={train}
-                isSelected={selectedTrainId === trainId}
+                isSelected={selectedTrainId === train.id}
                 onSelect={setSelectedTrainId}
               />
             ))}
@@ -334,7 +332,7 @@ export const IndexPage = () => {
         }}
       >
         <TimelineDetails
-          activeTrains={activeTrains}
+          activeTrains={trains}
           selectedTrainId={selectedTrainId}
           onTrainSelect={setSelectedTrainId}
           selectedTrain={selectedTrain}

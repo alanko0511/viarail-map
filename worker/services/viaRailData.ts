@@ -1,5 +1,11 @@
 import ky from "ky";
 import { z } from "zod";
+import type {
+  NormalizedAlert,
+  NormalizedStationTime,
+  NormalizedTrain,
+  NormalizedViaRailData,
+} from "../../shared/types";
 
 const alertSchema = z.object({
   header: z.object({ en: z.string(), fr: z.string() }),
@@ -63,7 +69,7 @@ export type StationTime = z.infer<typeof stationTimeSchema>;
 export type Train = z.infer<typeof trainSchema>;
 export type ViaRailData = z.infer<typeof schema>;
 
-export const getViaRailData = async () => {
+const getRawViaRailData = async () => {
   const response = await ky
     .get("https://tsimobile.viarail.ca/data/allData.json", {
       headers: {
@@ -75,4 +81,118 @@ export const getViaRailData = async () => {
     })
     .json();
   return schema.parse(response);
+};
+
+const normalizeDelayStatus = (diff?: string): "good" | "medium" | "bad" | null => {
+  if (!diff) return null;
+  if (diff === "goo") return "good";
+  if (diff === "med") return "medium";
+  if (diff === "bad") return "bad";
+  return null;
+};
+
+const normalizeStationTime = (
+  time: StationTime,
+  index: number,
+  total: number
+): NormalizedStationTime => {
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+  const position: NormalizedStationTime["position"] = isFirst
+    ? "first"
+    : isLast
+      ? "last"
+      : "intermediate";
+
+  const hasArrival = "arrival" in time;
+
+  return {
+    station: time.station,
+    code: time.code,
+    position,
+    arrival: hasArrival
+      ? {
+          scheduled: time.arrival.scheduled,
+          estimated: time.arrival.estimated ?? null,
+        }
+      : isFirst
+        ? null
+        : {
+            // Intermediate stations use top-level fields for arrival
+            scheduled: time.scheduled,
+            estimated: time.estimated,
+          },
+    departure: time.departure
+      ? {
+          scheduled: time.departure.scheduled,
+          estimated: time.departure.estimated ?? null,
+        }
+      : null,
+    delay: {
+      status: normalizeDelayStatus(time.diff),
+      minutes: time.diffMin ?? null,
+    },
+    eta: time.eta,
+  };
+};
+
+const normalizeAlerts = (alerts?: z.infer<typeof alertSchema>[]): NormalizedAlert[] => {
+  if (!alerts) return [];
+  return alerts.map((alert) => ({
+    header: alert.header.en,
+    description: alert.description.en,
+    url: alert.url.en,
+  }));
+};
+
+const normalizeTrain = (id: string, train: Train): NormalizedTrain | null => {
+  // Filter out trains without location
+  if (train.lat === undefined || train.lng === undefined) {
+    return null;
+  }
+
+  return {
+    id,
+    location: {
+      lat: train.lat,
+      lng: train.lng,
+      speed: train.speed ?? 0,
+      direction: train.direction ?? null,
+    },
+    status: {
+      departed: train.departed,
+      arrived: train.arrived,
+    },
+    route: {
+      from: train.from,
+      to: train.to,
+      instance: train.instance,
+    },
+    times: train.times.map((time, index) =>
+      normalizeStationTime(time, index, train.times.length)
+    ),
+    alerts: normalizeAlerts(train.alerts),
+    poll: {
+      timestamp: train.poll ?? null,
+      minutesAgo: train.pollMin ?? null,
+    },
+  };
+};
+
+const normalizeViaRailData = (data: ViaRailData): NormalizedViaRailData => {
+  const trains: NormalizedTrain[] = [];
+
+  for (const [id, train] of Object.entries(data)) {
+    const normalized = normalizeTrain(String(id), train);
+    if (normalized) {
+      trains.push(normalized);
+    }
+  }
+
+  return trains;
+};
+
+export const getViaRailData = async (): Promise<NormalizedViaRailData> => {
+  const rawData = await getRawViaRailData();
+  return normalizeViaRailData(rawData);
 };
