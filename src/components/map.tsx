@@ -6,10 +6,15 @@ import { layers, namedFlavor } from "@protomaps/basemaps"
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre"
 import type { FilterSpecification } from "maplibre-gl"
 import type { FeatureCollection } from "geojson"
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate, useRouter } from "@tanstack/react-router"
 import { Route as RootRoute } from "@/routes/__root"
 import { Button } from "@/components/ui/button"
 import { ArrowUp } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const PRIMARY_COLOR = "#efb100"
 
@@ -91,6 +96,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   const [routeData, setRouteData] = useState<FeatureCollection | null>(null)
   const trainData = RootRoute.useLoaderData()
   const navigate = useNavigate()
+  const router = useRouter()
 
   useEffect(() => {
     const protocol = new Protocol()
@@ -115,6 +121,11 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
       setRouteData(merged)
     })
   }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => router.invalidate(), 10_000)
+    return () => clearInterval(interval)
+  }, [router])
 
   if (!isClient) {
     return <div className="h-full w-full bg-[#000000]" />
@@ -150,27 +161,39 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
               zIndex: trainId === activeTrainId ? 1 : 0,
             }}
           >
-            <Button
-              size="xs"
-              className="shadow-md"
-              style={{
-                ...(trainId === activeTrainId && {
-                  backgroundColor: ACTIVE_COLOR,
-                  borderColor: ACTIVE_COLOR,
-                }),
-              }}
-              onClick={() =>
-                navigate({ to: "/train/$trainId", params: { trainId } })
-              }
-            >
-              {trainNumber}
-              {train.direction != null && (
-                <ArrowUp
-                  className="size-3"
-                  style={{ transform: `rotate(${train.direction}deg)` }}
-                />
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    size="xs"
+                    className="shadow-md"
+                    style={{
+                      ...(trainId === activeTrainId && {
+                        backgroundColor: ACTIVE_COLOR,
+                        borderColor: ACTIVE_COLOR,
+                      }),
+                    }}
+                    onClick={() =>
+                      navigate({
+                        to: "/train/$trainId",
+                        params: { trainId },
+                      })
+                    }
+                  />
+                }
+              >
+                {trainNumber}
+                {train.direction != null && (
+                  <ArrowUp
+                    className="size-3"
+                    style={{ transform: `rotate(${train.direction}deg)` }}
+                  />
+                )}
+              </TooltipTrigger>
+              {train.speed != null && (
+                <TooltipContent>{train.speed} km/h</TooltipContent>
               )}
-            </Button>
+            </Tooltip>
           </Marker>
         )
       })}
