@@ -10,6 +10,7 @@ const config = defineConfig({
   plugins: [
     devtools({
       injectSource: {
+        enabled: true,
         ignore: {
           components: ["Source", "Layer", "Map"],
         },

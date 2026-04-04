@@ -3,9 +3,15 @@ import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import { Protocol } from "pmtiles"
 import { layers, namedFlavor } from "@protomaps/basemaps"
-import Map, { Layer, Source } from "react-map-gl/maplibre"
+import Map, { Layer, Marker, Source } from "react-map-gl/maplibre"
 import type { FilterSpecification } from "maplibre-gl"
 import type { FeatureCollection } from "geojson"
+import { useNavigate } from "@tanstack/react-router"
+import { Route as RootRoute } from "@/routes/__root"
+import { Button } from "@/components/ui/button"
+import { ArrowUp } from "lucide-react"
+
+const PRIMARY_COLOR = "#efb100"
 
 const ROUTE_FILES = [
   "canadian",
@@ -39,7 +45,7 @@ const lineLayer = {
   type: "line" as const,
   filter: ["==", ["get", "type"], "alignment"] as FilterSpecification,
   paint: {
-    "line-color": "#FFCC00",
+    "line-color": PRIMARY_COLOR,
     "line-width": 4,
   },
   layout: {
@@ -54,7 +60,7 @@ const stationCircleLayer = {
   filter: ["==", ["get", "type"], "station-label"] as FilterSpecification,
   paint: {
     "circle-radius": 6,
-    "circle-color": "#FFCC00",
+    "circle-color": PRIMARY_COLOR,
     "circle-stroke-width": 1,
     "circle-stroke-color": "#555555",
   },
@@ -81,6 +87,8 @@ const stationLabelLayer = {
 export function TrainMap() {
   const [isClient, setIsClient] = useState(false)
   const [routeData, setRouteData] = useState<FeatureCollection | null>(null)
+  const trainData = RootRoute.useLoaderData()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const protocol = new Protocol()
@@ -127,6 +135,34 @@ export function TrainMap() {
           <Layer {...stationLabelLayer} />
         </Source>
       )}
+      {Object.entries(trainData).map(([trainId, train]) => {
+        if (train.lat == null || train.lng == null) return null
+        const trainNumber = trainId.split(" ")[0]
+        return (
+          <Marker
+            key={trainId}
+            longitude={train.lng}
+            latitude={train.lat}
+            anchor="center"
+          >
+            <Button
+              size="xs"
+              className="border-yellow-700 shadow-md"
+              onClick={() =>
+                navigate({ to: "/train/$trainId", params: { trainId } })
+              }
+            >
+              {trainNumber}
+              {train.direction != null && (
+                <ArrowUp
+                  className="size-3"
+                  style={{ transform: `rotate(${train.direction}deg)` }}
+                />
+              )}
+            </Button>
+          </Marker>
+        )
+      })}
     </Map>
   )
 }
