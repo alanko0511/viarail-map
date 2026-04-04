@@ -17,6 +17,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { MobileTrainBar } from "@/components/mobile-train-bar"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export const Route = createRootRoute({
   loader: () => getTrainData({ data: { timeZone: "America/Toronto" } }),
@@ -50,10 +52,13 @@ export const Route = createRootRoute({
 })
 
 function RootLayout() {
+  const isMobile = useIsMobile()
   const trainMatch = useMatch({
     from: "/train/$trainId",
     shouldThrow: false,
   })
+
+  const activeTrainId = trainMatch?.params.trainId
 
   return (
     <TooltipProvider>
@@ -61,9 +66,10 @@ function RootLayout() {
         <AppSidebar />
         <SidebarInset className="overflow-hidden">
           <div className="relative flex h-full flex-1 flex-col">
-            <SidebarTrigger className="absolute left-2 top-2 z-10" />
+            <SidebarTrigger className="absolute left-2 top-2 z-10 max-md:hidden" />
+            {isMobile && <MobileTrainBar trainId={activeTrainId} />}
             <div className="flex-1">
-              <TrainMap activeTrainId={trainMatch?.params.trainId} />
+              <TrainMap activeTrainId={activeTrainId} />
             </div>
           </div>
         </SidebarInset>
