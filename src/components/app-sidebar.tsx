@@ -1,6 +1,5 @@
 import * as React from "react"
-import { useMatch } from "@tanstack/react-router"
-import { TerminalIcon } from "lucide-react"
+import { Link, useMatch } from "@tanstack/react-router"
 
 import { TrainSearchCombobox } from "@/components/train-search-combobox"
 import { TrainTimeline } from "@/components/train-timeline"
@@ -25,14 +24,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<a href="/" />}>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <TerminalIcon className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">Acme Inc</span>
-                <span className="truncate text-xs">Enterprise</span>
-              </div>
+            <SidebarMenuButton size="md" render={<Link to="/" />}>
+              <span className="truncate font-medium">VIA Rail Map</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

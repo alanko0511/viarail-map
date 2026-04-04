@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "viarail-map",
+  "compatibility_date": "2025-12-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "viarail-map.alanko.dev",
+      "custom_domain": true
+    }
+  ]
+}
