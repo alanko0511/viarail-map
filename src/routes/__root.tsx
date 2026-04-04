@@ -6,6 +6,8 @@ import {
 } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
+import { configure } from "onedollarstats"
+import { useEffect } from "react"
 
 import { getTrainData } from "@/server/trains"
 import appCss from "../styles.css?url"
@@ -52,6 +54,12 @@ export const Route = createRootRoute({
 })
 
 function RootLayout() {
+  useEffect(() => {
+    configure({
+      trackLocalhostAs: "viarail-map.alanko.dev",
+    })
+  }, [])
+
   const isMobile = useIsMobile()
   const trainMatch = useMatch({
     from: "/train/$trainId",
