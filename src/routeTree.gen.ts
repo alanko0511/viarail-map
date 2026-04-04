@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TrainTrainIdRouteImport } from './routes/train/$trainId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrainTrainIdRoute = TrainTrainIdRouteImport.update({
+  id: '/train/$trainId',
+  path: '/train/$trainId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/train/$trainId': typeof TrainTrainIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/train/$trainId': typeof TrainTrainIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/train/$trainId': typeof TrainTrainIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/train/$trainId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/train/$trainId'
+  id: '__root__' | '/' | '/train/$trainId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  TrainTrainIdRoute: typeof TrainTrainIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/train/$trainId': {
+      id: '/train/$trainId'
+      path: '/train/$trainId'
+      fullPath: '/train/$trainId'
+      preLoaderRoute: typeof TrainTrainIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TrainTrainIdRoute: TrainTrainIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

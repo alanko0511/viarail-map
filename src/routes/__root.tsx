@@ -1,8 +1,20 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import {
+  HeadContent,
+  Outlet,
+  Scripts,
+  createRootRoute,
+} from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 
 import appCss from "../styles.css?url"
+import { AppSidebar } from "@/components/app-sidebar"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 export const Route = createRootRoute({
   head: () => ({
@@ -15,7 +27,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: "VIA Rail Map",
       },
     ],
     links: [
@@ -26,7 +38,26 @@ export const Route = createRootRoute({
     ],
   }),
   shellComponent: RootDocument,
+  component: RootLayout,
 })
+
+function RootLayout() {
+  return (
+    <TooltipProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset className="overflow-hidden">
+          <div className="relative flex h-full flex-1 flex-col">
+            <SidebarTrigger className="absolute left-2 top-2 z-10" />
+            <div className="flex-1">
+              <Outlet />
+            </div>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
+  )
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
