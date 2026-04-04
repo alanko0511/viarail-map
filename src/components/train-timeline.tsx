@@ -1,10 +1,11 @@
-import { CircleCheckIcon } from "lucide-react"
+import { CircleAlertIcon, CircleCheckIcon } from "lucide-react"
 
 import type {
   ProcessedStop,
   StationStatus,
 } from "@/server/schemas/processed-train"
 import { Route as RootRoute } from "@/routes/__root"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
@@ -177,6 +178,29 @@ export function TrainTimeline({ trainId }: { trainId: string }) {
       <SidebarGroupLabel>
         Train {trainId} — {train.from} → {train.to}
       </SidebarGroupLabel>
+      {train.alerts.length > 0 && (
+        <div className="space-y-2 px-2 pt-2">
+          {train.alerts.map((alert, i) => (
+            <Alert key={i} variant="destructive">
+              <CircleAlertIcon />
+              <AlertTitle>{alert.header.en}</AlertTitle>
+              <AlertDescription>
+                {alert.description.en}
+                {alert.url.en && (
+                  <a
+                    href={alert.url.en}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-1 underline"
+                  >
+                    Learn more
+                  </a>
+                )}
+              </AlertDescription>
+            </Alert>
+          ))}
+        </div>
+      )}
       <div className="px-2 py-2">
         {train.stops.map((stop, i) => (
           <TimelineStop

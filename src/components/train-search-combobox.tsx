@@ -1,6 +1,12 @@
 import { useNavigate } from "@tanstack/react-router"
 
+import { useIsMobile } from "@/hooks/use-mobile"
 import { Route as RootRoute } from "@/routes/__root"
+import {
+  NativeSelect,
+  NativeSelectOptGroup,
+  NativeSelectOption,
+} from "@/components/ui/native-select"
 import {
   Select,
   SelectContent,
@@ -14,6 +20,7 @@ import {
 
 export function TrainSearchCombobox() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const trainData = RootRoute.useLoaderData()
 
   const activeIds: string[] = []
@@ -26,13 +33,43 @@ export function TrainSearchCombobox() {
     }
   }
 
+  const handleChange = (value: string) => {
+    if (value) {
+      navigate({ to: "/train/$trainId", params: { trainId: value } })
+    }
+  }
+
+  if (isMobile) {
+    return (
+      <NativeSelect
+        className="w-full"
+        defaultValue=""
+        onChange={(e) => handleChange(e.target.value)}
+      >
+        <NativeSelectOption value="" disabled>
+          Select a train...
+        </NativeSelectOption>
+        {activeIds.map((id) => (
+          <NativeSelectOption key={id} value={id}>
+            {id}
+          </NativeSelectOption>
+        ))}
+        {notInServiceIds.length > 0 && (
+          <NativeSelectOptGroup label="Not in service">
+            {notInServiceIds.map((id) => (
+              <NativeSelectOption key={id} value={id}>
+                {id}
+              </NativeSelectOption>
+            ))}
+          </NativeSelectOptGroup>
+        )}
+      </NativeSelect>
+    )
+  }
+
   return (
     <Select
-      onValueChange={(value: string | null) => {
-        if (value) {
-          navigate({ to: "/train/$trainId", params: { trainId: value } })
-        }
-      }}
+      onValueChange={(value: string | null) => value && handleChange(value)}
     >
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Select a train..." />

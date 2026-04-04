@@ -110,9 +110,9 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   useEffect(() => {
     Promise.all(
       ROUTE_FILES.map((name) =>
-        fetch(`/viarail/${name}.json`).then((r) => r.json()),
+        fetch(`/viarail/${name}.json`).then((r) => r.json() as Promise<FeatureCollection>),
       ),
-    ).then((collections: FeatureCollection[]) => {
+    ).then((collections) => {
       const merged: FeatureCollection = {
         type: "FeatureCollection",
         features: collections.flatMap((c) => c.features),
@@ -230,11 +230,11 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
                           to: "/train/$trainId",
                           params: { trainId },
                         })
-                        if (isMobile) {
-                          setOpenMobile(true)
-                        } else {
-                          setOpen(true)
-                        }
+                      }
+                      if (isMobile) {
+                        setOpenMobile(true)
+                      } else {
+                        setOpen(true)
                       }
                     }}
                   />
@@ -256,13 +256,13 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
         )
       })}
       {activeTrainId && (
-        <div className="absolute bottom-6 left-3 z-10">
+        <div className="absolute bottom-2.5 left-2.5 z-10">
           <Tooltip>
             <TooltipTrigger
               render={
                 <Button
                   size="icon"
-                  variant={following ? "default" : "outline"}
+                  variant={following ? "default" : "secondary"}
                   className="size-8 shadow-md"
                   onClick={handleToggleFollow}
                 />

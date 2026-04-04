@@ -24,7 +24,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="md" render={<Link to="/" />}>
+            <SidebarMenuButton size="lg" render={<Link to="/" />} variant="default">
               <span className="truncate font-medium">VIA Rail Map</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

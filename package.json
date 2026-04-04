@@ -10,7 +10,7 @@
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx}\"",
     "typecheck": "tsc --noEmit",
-    "deploy": "bun run build && wrangler deploy",
+    "deploy": "bun run typecheck && bun run build && wrangler deploy",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
