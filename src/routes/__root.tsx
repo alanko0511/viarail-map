@@ -1,8 +1,8 @@
 import {
   HeadContent,
-  Outlet,
   Scripts,
   createRootRoute,
+  useMatch,
 } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
@@ -10,6 +10,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools"
 import { getTrainData } from "@/server/trains"
 import appCss from "../styles.css?url"
 import { AppSidebar } from "@/components/app-sidebar"
+import { TrainMap } from "@/components/map"
 import {
   SidebarInset,
   SidebarProvider,
@@ -44,6 +45,11 @@ export const Route = createRootRoute({
 })
 
 function RootLayout() {
+  const trainMatch = useMatch({
+    from: "/train/$trainId",
+    shouldThrow: false,
+  })
+
   return (
     <TooltipProvider>
       <SidebarProvider>
@@ -52,7 +58,7 @@ function RootLayout() {
           <div className="relative flex h-full flex-1 flex-col">
             <SidebarTrigger className="absolute left-2 top-2 z-10" />
             <div className="flex-1">
-              <Outlet />
+              <TrainMap activeTrainId={trainMatch?.params.trainId} />
             </div>
           </div>
         </SidebarInset>

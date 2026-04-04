@@ -50,8 +50,37 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="px-2 py-2 text-xs text-muted-foreground">
-          Data from VIA Rail Canada. Not affiliated with VIA Rail.
+        <div className="space-y-2 px-2 py-2 text-xs text-muted-foreground">
+          <p>
+            GitHub:{" "}
+            <a
+              href="https://github.com/alanko0511/viarail-map"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground"
+            >
+              alanko0511/viarail-map
+            </a>
+          </p>
+          <div>
+            <p>Data source:</p>
+            <ul className="ml-4 list-disc">
+              <li>VIA Rail Canada (live train data)</li>
+              <li>RailFansMap (route data)</li>
+            </ul>
+          </div>
+          <p>
+            The project is not affiliated with VIA Rail Canada. Check out{" "}
+            <a
+              href="https://www.viarail.ca"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground"
+            >
+              viarail.ca
+            </a>{" "}
+            for the latest news and information about your journey.
+          </p>
         </div>
       </SidebarFooter>
     </Sidebar>
