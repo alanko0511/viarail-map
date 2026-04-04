@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
-import { Protocol } from "pmtiles"
 import { layers, namedFlavor } from "@protomaps/basemaps"
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre"
 import type { MapRef } from "react-map-gl/maplibre"
@@ -39,7 +38,7 @@ const mapStyle: maplibregl.StyleSpecification = {
   sources: {
     protomaps: {
       type: "vector",
-      url: "pmtiles://https://build.protomaps.com/20260404.pmtiles",
+      url: "/tiles/ca.json",
       attribution:
         '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
     },
@@ -105,13 +104,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   const { setOpen, setOpenMobile, isMobile } = useSidebar()
 
   useEffect(() => {
-    const protocol = new Protocol()
-    maplibregl.addProtocol("pmtiles", protocol.tile)
     setIsClient(true)
-
-    return () => {
-      maplibregl.removeProtocol("pmtiles")
-    }
   }, [])
 
   useEffect(() => {
@@ -190,6 +183,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
         zoom: 4,
       }}
       style={{ width: "100%", height: "100%" }}
+      maxBounds={[-143.789063, 40.313043, -50.273438, 83.753911]}
       mapStyle={mapStyle}
       onMoveStart={handleMoveStart}
     >
