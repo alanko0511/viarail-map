@@ -13,6 +13,9 @@ bun --bun run dev       # Dev server on port 3000
 bun --bun run build     # Production build
 bun --bun run preview   # Preview production build
 bun --bun run test      # Run Vitest tests
+bun --bun run lint      # ESLint (TanStack config)
+bun --bun run format    # Prettier (with tailwindcss plugin)
+bun --bun run typecheck # tsc --noEmit
 ```
 
 Package manager is **Bun**.
@@ -22,11 +25,11 @@ Package manager is **Bun**.
 - **Framework**: TanStack Start with file-based routing (`src/routes/`)
 - **Styling**: Tailwind CSS v4 + shadcn/ui components (base-nova style)
 - **Route tree**: Auto-generated at `src/routeTree.gen.ts` — do not edit manually
-- **Path aliases**: `#/*` and `@/*` both map to `./src/*`
+- **Path aliases**: `@/*` maps to `./src/*`
 
 ### Key directories
 
-- `src/routes/` — File-based routes. `__root.tsx` is the root layout (Header, Footer, theme init script)
+- `src/routes/` — File-based routes. `__root.tsx` is the root layout
 - `src/components/ui/` — shadcn/ui primitives
 - `src/components/` — App-level components
 - `src/lib/utils.ts` — `cn()` helper (clsx + tailwind-merge)
@@ -38,4 +41,4 @@ UI components come from shadcn/ui (base-nova style). When adding or working with
 
 ### Theming
 
-Light/dark/auto theme support via CSS variables in `src/styles.css`. Theme is persisted in localStorage and an inline script in `__root.tsx` prevents flash on load. The `ThemeToggle` component cycles through modes.
+Theme colors are defined via CSS variables in `src/styles.css` with light and dark variants. The dark variant is activated by the `.dark` class on `<html>`.
