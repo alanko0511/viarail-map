@@ -1,11 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { TrainMap } from "@/components/map"
 
 export const Route = createFileRoute("/")({ component: MapPage })
 
 function MapPage() {
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-muted/30">
-      <p className="text-muted-foreground">Map will render here</p>
-    </div>
-  )
+  return <TrainMap />
 }
