@@ -7,6 +7,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 
+import { getTrainData } from "@/server/trains"
 import appCss from "../styles.css?url"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
@@ -17,6 +18,7 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 export const Route = createRootRoute({
+  loader: () => getTrainData({ data: { timeZone: "America/Toronto" } }),
   head: () => ({
     meta: [
       {

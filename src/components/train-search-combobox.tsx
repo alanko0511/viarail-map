@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router"
 import { SearchIcon } from "lucide-react"
 
+import { Route as RootRoute } from "@/routes/__root"
 import {
   Combobox,
   ComboboxContent,
@@ -10,15 +11,10 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox"
 
-// Placeholder data — will be replaced with server data
-const MOCK_TRAINS = [
-  { id: "1", label: "Train 1 — Ottawa to Toronto" },
-  { id: "2", label: "Train 2 — Toronto to Montreal" },
-  { id: "3", label: "Train 3 — Montreal to Quebec City" },
-]
-
 export function TrainSearchCombobox() {
   const navigate = useNavigate()
+  const trainData = RootRoute.useLoaderData()
+  const trainIds = Object.keys(trainData)
 
   return (
     <Combobox
@@ -35,10 +31,10 @@ export function TrainSearchCombobox() {
       <ComboboxContent>
         <ComboboxList>
           <ComboboxEmpty>No trains found.</ComboboxEmpty>
-          {MOCK_TRAINS.map((train) => (
-            <ComboboxItem key={train.id} value={train.id}>
+          {trainIds.map((id) => (
+            <ComboboxItem key={id} value={id}>
               <SearchIcon className="text-muted-foreground" />
-              {train.label}
+              {id}
             </ComboboxItem>
           ))}
         </ComboboxList>
