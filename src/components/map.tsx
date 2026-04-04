@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import { Protocol } from "pmtiles"
 import { layers, namedFlavor } from "@protomaps/basemaps"
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre"
+import type { MapRef } from "react-map-gl/maplibre"
 import type { FilterSpecification } from "maplibre-gl"
 import type { FeatureCollection } from "geojson"
 import { useNavigate, useRouter } from "@tanstack/react-router"
 import { Route as RootRoute } from "@/routes/__root"
 import { Button } from "@/components/ui/button"
-import { ArrowUp } from "lucide-react"
+import { useSidebar } from "@/components/ui/sidebar"
+import { ArrowUp, LocateFixed, LocateOff } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -94,9 +96,13 @@ const ACTIVE_COLOR = "#fcc800"
 export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   const [isClient, setIsClient] = useState(false)
   const [routeData, setRouteData] = useState<FeatureCollection | null>(null)
+  const [following, setFollowing] = useState(false)
+  const mapRef = useRef<MapRef>(null)
+  const prevTrainIdRef = useRef<string | undefined>(undefined)
   const trainData = RootRoute.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
+  const { setOpen, setOpenMobile, isMobile } = useSidebar()
 
   useEffect(() => {
     const protocol = new Protocol()
@@ -127,12 +133,57 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
     return () => clearInterval(interval)
   }, [router])
 
+  // When activeTrainId changes, fly to the train and enable follow
+  useEffect(() => {
+    if (!activeTrainId || activeTrainId === prevTrainIdRef.current) return
+    prevTrainIdRef.current = activeTrainId
+
+    const train = trainData[activeTrainId]
+    if (train?.lat == null || train?.lng == null) return
+
+    mapRef.current?.flyTo({ center: [train.lng, train.lat], zoom: 8 })
+    setFollowing(true)
+  }, [activeTrainId, trainData])
+
+  // When following and train data updates, keep centering on the train
+  useEffect(() => {
+    if (!following || !activeTrainId) return
+    const train = trainData[activeTrainId]
+    if (train?.lat == null || train?.lng == null) return
+
+    mapRef.current?.easeTo({ center: [train.lng, train.lat], duration: 500 })
+  }, [following, trainData, activeTrainId])
+
+  // Disable follow when user interacts with the map
+  const handleMoveStart = useCallback(
+    (e: { originalEvent?: unknown }) => {
+      if (e.originalEvent) {
+        setFollowing(false)
+      }
+    },
+    [],
+  )
+
+  const handleToggleFollow = useCallback(() => {
+    setFollowing((prev) => {
+      const next = !prev
+      if (next && activeTrainId) {
+        const train = trainData[activeTrainId]
+        if (train?.lat != null && train?.lng != null) {
+          mapRef.current?.flyTo({ center: [train.lng, train.lat], zoom: 8 })
+        }
+      }
+      return next
+    })
+  }, [activeTrainId, trainData])
+
   if (!isClient) {
     return <div className="h-full w-full bg-[#000000]" />
   }
 
   return (
     <Map
+      ref={mapRef}
       initialViewState={{
         longitude: -96,
         latitude: 56,
@@ -140,6 +191,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
       }}
       style={{ width: "100%", height: "100%" }}
       mapStyle={mapStyle}
+      onMoveStart={handleMoveStart}
     >
       {routeData && (
         <Source id="train-routes" type="geojson" data={routeData}>
@@ -173,12 +225,24 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
                         borderColor: ACTIVE_COLOR,
                       }),
                     }}
-                    onClick={() =>
-                      navigate({
-                        to: "/train/$trainId",
-                        params: { trainId },
-                      })
-                    }
+                    onClick={() => {
+                      if (trainId === activeTrainId) {
+                        mapRef.current?.flyTo({
+                          center: [train.lng!, train.lat!],
+                        })
+                        setFollowing(true)
+                      } else {
+                        navigate({
+                          to: "/train/$trainId",
+                          params: { trainId },
+                        })
+                        if (isMobile) {
+                          setOpenMobile(true)
+                        } else {
+                          setOpen(true)
+                        }
+                      }
+                    }}
                   />
                 }
               >
@@ -197,6 +261,31 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
           </Marker>
         )
       })}
+      {activeTrainId && (
+        <div className="absolute bottom-6 left-3 z-10">
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  size="icon"
+                  variant={following ? "default" : "outline"}
+                  className="size-8 shadow-md"
+                  onClick={handleToggleFollow}
+                />
+              }
+            >
+              {following ? (
+                <LocateFixed className="size-4" />
+              ) : (
+                <LocateOff className="size-4" />
+              )}
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {following ? "Following train" : "Follow train"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
     </Map>
   )
 }

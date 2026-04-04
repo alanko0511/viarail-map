@@ -1,44 +1,62 @@
 import { useNavigate } from "@tanstack/react-router"
-import { SearchIcon } from "lucide-react"
 
 import { Route as RootRoute } from "@/routes/__root"
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox"
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export function TrainSearchCombobox() {
   const navigate = useNavigate()
   const trainData = RootRoute.useLoaderData()
-  const trainIds = Object.keys(trainData)
+
+  const activeIds: string[] = []
+  const notInServiceIds: string[] = []
+  for (const [id, train] of Object.entries(trainData)) {
+    if (train.departed && !train.arrived) {
+      activeIds.push(id)
+    } else {
+      notInServiceIds.push(id)
+    }
+  }
 
   return (
-    <Combobox
-      onValueChange={(value) => {
+    <Select
+      onValueChange={(value: string | null) => {
         if (value) {
-          navigate({ to: "/train/$trainId", params: { trainId: String(value) } })
+          navigate({ to: "/train/$trainId", params: { trainId: value } })
         }
       }}
     >
-      <ComboboxInput
-        placeholder="Search trains..."
-        showTrigger={false}
-      />
-      <ComboboxContent>
-        <ComboboxList>
-          <ComboboxEmpty>No trains found.</ComboboxEmpty>
-          {trainIds.map((id) => (
-            <ComboboxItem key={id} value={id}>
-              <SearchIcon className="text-muted-foreground" />
-              {id}
-            </ComboboxItem>
-          ))}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Select a train..." />
+      </SelectTrigger>
+      <SelectContent>
+        {activeIds.map((id) => (
+          <SelectItem key={id} value={id}>
+            {id}
+          </SelectItem>
+        ))}
+        {notInServiceIds.length > 0 && (
+          <>
+            {activeIds.length > 0 && <SelectSeparator />}
+            <SelectGroup>
+              <SelectLabel>Not in service</SelectLabel>
+              {notInServiceIds.map((id) => (
+                <SelectItem key={id} value={id}>
+                  {id}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </>
+        )}
+      </SelectContent>
+    </Select>
   )
 }
