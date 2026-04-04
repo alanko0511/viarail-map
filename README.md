@@ -1,21 +1,16 @@
-# TanStack Start + shadcn/ui
+# VIA Rail Live Train Tracker
 
-This is a template for a new TanStack Start project with React, TypeScript, and shadcn/ui.
+A real-time train tracking application that displays live VIA Rail train locations on an interactive map with detailed journey timelines, using data from VIA Rail's `tsimobile.viarail.ca` API.
 
-## Adding components
+## Features
 
-To add components to your app, run the following command:
+- **Real-time Train Tracking**: View all active VIA Rail trains on an interactive map
+- **Live Location Updates**: Train positions auto-refresh every 10 seconds
+- **Train Follow Mode**: Select a train to have the map smoothly follow it in real-time
+- **Detailed Timelines**: Track train progress through each station with scheduled and estimated arrival/departure times
+- **Delay Information**: Color-coded delay badges on each stop
+- **Service Alerts**: Display important service alerts and announcements per train
 
-```bash
-npx shadcn@latest add button
-```
+## Acknowledgments
 
-This will place the ui components in the `components` directory.
-
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button";
-```
+- Train data provided by [VIA Rail Canada](https://www.viarail.ca/)
