@@ -6,5 +6,6 @@ export const Route = createFileRoute("/train/$trainId")({
 })
 
 function TrainPage() {
-  return <TrainMap />
+  const { trainId } = Route.useParams()
+  return <TrainMap activeTrainId={trainId} />
 }

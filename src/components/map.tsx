@@ -84,7 +84,9 @@ const stationLabelLayer = {
   },
 }
 
-export function TrainMap() {
+const ACTIVE_COLOR = "#fcc800"
+
+export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   const [isClient, setIsClient] = useState(false)
   const [routeData, setRouteData] = useState<FeatureCollection | null>(null)
   const trainData = RootRoute.useLoaderData()
@@ -144,10 +146,19 @@ export function TrainMap() {
             longitude={train.lng}
             latitude={train.lat}
             anchor="center"
+            style={{
+              zIndex: trainId === activeTrainId ? 1 : 0,
+            }}
           >
             <Button
               size="xs"
-              className="border-yellow-700 shadow-md"
+              className="shadow-md"
+              style={{
+                ...(trainId === activeTrainId && {
+                  backgroundColor: ACTIVE_COLOR,
+                  borderColor: ACTIVE_COLOR,
+                }),
+              }}
               onClick={() =>
                 navigate({ to: "/train/$trainId", params: { trainId } })
               }
