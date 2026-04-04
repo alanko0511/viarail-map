@@ -1,18 +1,19 @@
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "viarail-map",
-  "main": "worker/index.ts",
   "compatibility_date": "2025-12-21",
-  "assets": {
-    "not_found_handling": "single-page-application"
-  },
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
   "observability": {
     "enabled": true
   },
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "pmtiles",
+      "remote": true
+    }
+  ],
   "routes": [
     {
       "pattern": "viarail-map.alanko.dev",

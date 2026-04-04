@@ -4,62 +4,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-VIA Rail Live Train Tracker - A real-time train tracking web app displaying live VIA Rail train locations on a Mapbox map with journey timelines. Uses data from VIA Rail's `tsimobile.viarail.ca` API.
+Interactive map visualization of VIA Rail Canada's train routes. Built with TanStack Start (React 19 SSR framework), Vite, and Tailwind CSS v4.
 
-## Development Commands
+## Commands
 
 ```bash
-bun run dev        # Start Vite dev server
-bun run build      # TypeScript check + Vite build
-bun run lint       # ESLint check
-bun run preview    # Build and preview production
-bun run deploy     # Build and deploy to Cloudflare
+bun --bun run dev       # Dev server on port 3000
+bun --bun run build     # Production build
+bun --bun run preview   # Preview production build
+bun --bun run test      # Run Vitest tests
+bun --bun run lint      # ESLint (TanStack config)
+bun --bun run format    # Prettier (with tailwindcss plugin)
+bun --bun run typecheck # tsc --noEmit
 ```
+
+Package manager is **Bun**.
 
 ## Architecture
 
-### Frontend (React + Mantine)
+- **Framework**: TanStack Start with file-based routing (`src/routes/`)
+- **Styling**: Tailwind CSS v4 + shadcn/ui components (base-nova style)
+- **Route tree**: Auto-generated at `src/routeTree.gen.ts` — do not edit manually
+- **Path aliases**: `@/*` maps to `./src/*`
 
-- **Entry point**: `src/main.tsx` → `App.tsx` → `AppRouter.tsx`
-- **Main page**: `src/routes/IndexPage.tsx` - Contains map, TrainMarker, and ViaRailRoutes components
-- **Timeline panel**: `src/components/TimelineDetails.tsx` - Station timeline for selected train
-- **Data fetching**: `src/hooks/useViaRailData.ts` - TanStack Query with 10s refetch interval
-- **API client**: `src/services/api.ts` - Hono RPC client with type inference from worker
+### Key directories
 
-### Backend (Cloudflare Worker)
+- `src/routes/` — File-based routes. `__root.tsx` is the root layout
+- `src/components/ui/` — shadcn/ui primitives
+- `src/components/` — App-level components
+- `src/lib/utils.ts` — `cn()` helper (clsx + tailwind-merge)
+- `public/viarail/` — Static JSON data for train routes (Canadian, Corridor, Ocean, etc.)
 
-- **Server**: `worker/index.ts` - Hono server with single `/trainData` endpoint
-- **Data service**: `worker/services/viaRailData.ts` - Fetches from VIA Rail API with Zod validation
+### shadcn/ui
 
-### Shared
+UI components come from shadcn/ui (base-nova style). When adding or working with shadcn components, use the **shadcn MCP tools** (`mcp__shadcn__*`) to look up available components, view examples, and get the correct install commands rather than guessing.
 
-- **Utilities**: `shared/utils.ts` - Station status helpers (hasDepartedFromStation, hasArrivedAtStation, isStationCompleted)
+### Theming
 
-### Map Routes
-
-GeoJSON route files in `public/viarail/` - 12 route files (Canadian, Corridor, Ocean, etc.)
-
-## Tech Stack
-
-- **Frontend**: React 19, Mantine 8, react-map-gl + Mapbox GL, TanStack React Query, Wouter
-- **Backend**: Cloudflare Worker, Hono, Zod
-- **Build**: Vite, SWC, TypeScript 5.8
-
-## TypeScript Conventions
-
-1. **Use arrow functions** for all functions (except class methods)
-2. **Use explicit `type` imports**: `import type { User } from "./types"`
-3. **Use `type` over `interface`** for type definitions
-4. **Inline props types** in components unless shared across files
-
-## Environment Variables
-
-Required in `.env.development` / `.env.production`:
-
-- `VITE_MAPBOX_ACCESS_TOKEN`
-
-## Key Patterns
-
-- URL routing with optional train ID: `/:trainId?`
-- Color-coded delays: green (<5m), orange (5-15m), red (>15m)
-- Train markers rotate arrow based on `train.direction`
+Theme colors are defined via CSS variables in `src/styles.css` with light and dark variants. The dark variant is activated by the `.dark` class on `<html>`.
