@@ -8,7 +8,13 @@ import { nitro } from "nitro/vite"
 
 const config = defineConfig({
   plugins: [
-    devtools(),
+    devtools({
+      injectSource: {
+        ignore: {
+          components: ["Source", "Layer", "Map"],
+        },
+      },
+    }),
     nitro(),
     // this is the plugin that enables path aliases
     viteTsConfigPaths({
