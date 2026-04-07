@@ -6,10 +6,9 @@ import {
   PMTiles,
   ResolvedValueCache,
   TileType,
-  tileTypeExt,
-  type RangeResponse,
-  type Source,
+  tileTypeExt
 } from "pmtiles"
+import type {RangeResponse, Source} from "pmtiles";
 
 // --- Path parsing (from protomaps/PMTiles shared/index.ts) ---
 

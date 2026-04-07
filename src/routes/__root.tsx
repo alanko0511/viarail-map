@@ -8,9 +8,9 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 import { configure } from "onedollarstats"
 import { useEffect } from "react"
-
-import { getTrainData } from "@/server/trains"
 import appCss from "../styles.css?url"
+import { getTrainData } from "@/server/trains"
+import { getGeolocation } from "@/server/geolocation"
 import { AppSidebar } from "@/components/app-sidebar"
 import { TrainMap } from "@/components/map"
 import {
@@ -23,7 +23,19 @@ import { MobileTrainBar } from "@/components/mobile-train-bar"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 export const Route = createRootRoute({
-  loader: () => getTrainData({ data: { timeZone: "America/Toronto" } }),
+  loader: async () => {
+    const [trainResult, geoResult] = await Promise.allSettled([
+      getTrainData({ data: { timeZone: "America/Toronto" } }),
+      getGeolocation(),
+    ])
+
+    return {
+      trainData:
+        trainResult.status === "fulfilled" ? trainResult.value : ({} as Record<string, never>),
+      geolocation:
+        geoResult.status === "fulfilled" ? geoResult.value : null,
+    }
+  },
   head: () => ({
     meta: [
       {

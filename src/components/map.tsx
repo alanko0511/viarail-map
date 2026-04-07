@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import maplibregl from "maplibre-gl"
-import "maplibre-gl/dist/maplibre-gl.css"
-import { layers, namedFlavor } from "@protomaps/basemaps"
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre"
+import { layers, namedFlavor } from "@protomaps/basemaps"
+import { useNavigate, useRouter } from "@tanstack/react-router"
+import { ArrowUp, LocateFixed, LocateOff } from "lucide-react"
+import type maplibregl from "maplibre-gl"
+import "maplibre-gl/dist/maplibre-gl.css"
 import type { MapRef } from "react-map-gl/maplibre"
 import type { FilterSpecification } from "maplibre-gl"
 import type { FeatureCollection } from "geojson"
-import { useNavigate, useRouter } from "@tanstack/react-router"
 import { Route as RootRoute } from "@/routes/__root"
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
-import { ArrowUp, LocateFixed, LocateOff } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -98,7 +98,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   const [following, setFollowing] = useState(false)
   const mapRef = useRef<MapRef>(null)
   const prevTrainIdRef = useRef<string | undefined>(undefined)
-  const trainData = RootRoute.useLoaderData()
+  const { trainData, geolocation } = RootRoute.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
   const { setOpen, setOpenMobile, isMobile } = useSidebar()
@@ -110,7 +110,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   useEffect(() => {
     Promise.all(
       ROUTE_FILES.map((name) =>
-        fetch(`/viarail/${name}.json`).then((r) => r.json() as Promise<FeatureCollection>),
+        fetch(`/viarail/${name}.json`).then((r) => r.json<FeatureCollection>()),
       ),
     ).then((collections) => {
       const merged: FeatureCollection = {
@@ -132,7 +132,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
     prevTrainIdRef.current = activeTrainId
 
     const train = trainData[activeTrainId]
-    if (train?.lat == null || train?.lng == null) return
+    if (train.lat == null || train.lng == null) return
 
     mapRef.current?.flyTo({ center: [train.lng, train.lat], zoom: 8 })
     setFollowing(true)
@@ -142,7 +142,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   useEffect(() => {
     if (!following || !activeTrainId) return
     const train = trainData[activeTrainId]
-    if (train?.lat == null || train?.lng == null) return
+    if (train.lat == null || train.lng == null) return
 
     mapRef.current?.easeTo({ center: [train.lng, train.lat], duration: 500 })
   }, [following, trainData, activeTrainId])
@@ -162,7 +162,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
       const next = !prev
       if (next && activeTrainId) {
         const train = trainData[activeTrainId]
-        if (train?.lat != null && train?.lng != null) {
+        if (train.lat != null && train.lng != null) {
           mapRef.current?.flyTo({ center: [train.lng, train.lat], zoom: 8 })
         }
       }
@@ -178,9 +178,9 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
     <Map
       ref={mapRef}
       initialViewState={{
-        longitude: -96,
-        latitude: 56,
-        zoom: 4,
+        longitude: geolocation?.lon ?? -79.38032,
+        latitude: geolocation?.lat ?? 43.64481,
+        zoom: 9,
       }}
       style={{ width: "100%", height: "100%" }}
       maxBounds={[-143.789063, 40.313043, -50.273438, 83.753911]}

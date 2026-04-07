@@ -158,7 +158,7 @@ function TimelineStop({
 }
 
 export function TrainTimeline({ trainId }: { trainId: string }) {
-  const trainData = RootRoute.useLoaderData()
+  const { trainData } = RootRoute.useLoaderData()
   const train = trainData[trainId]
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- trainId may not exist in data

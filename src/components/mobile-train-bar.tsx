@@ -9,7 +9,7 @@ function formatTime(iso: string): string {
 }
 
 export function MobileTrainBar({ trainId }: { trainId: string | undefined }) {
-  const trainData = RootRoute.useLoaderData()
+  const { trainData } = RootRoute.useLoaderData()
   const train = trainId ? trainData[trainId] : undefined
   const { toggleSidebar } = useSidebar()
 

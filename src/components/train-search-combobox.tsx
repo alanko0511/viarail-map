@@ -21,7 +21,7 @@ import {
 export function TrainSearchCombobox() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const trainData = RootRoute.useLoaderData()
+  const { trainData } = RootRoute.useLoaderData()
 
   const activeIds: string[] = []
   const notInServiceIds: string[] = []
