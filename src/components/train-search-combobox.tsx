@@ -23,8 +23,8 @@ export function TrainSearchCombobox() {
   const isMobile = useIsMobile()
   const { trainData } = RootRoute.useLoaderData()
 
-  const activeIds: string[] = []
-  const notInServiceIds: string[] = []
+  const activeIds: Array<string> = []
+  const notInServiceIds: Array<string> = []
   for (const [id, train] of Object.entries(trainData)) {
     if (train.departed && !train.arrived) {
       activeIds.push(id)
