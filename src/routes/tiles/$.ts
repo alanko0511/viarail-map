@@ -17,8 +17,8 @@ function pmtilesPath(name: string): string {
 }
 
 const TILE_RE =
-  /^\/(?<NAME>[0-9a-zA-Z\/!\-_.*'()]+)\/(?<Z>\d+)\/(?<X>\d+)\/(?<Y>\d+).(?<EXT>[a-z]+)$/
-const TILESET_RE = /^\/(?<NAME>[0-9a-zA-Z\/!\-_.*'()]+).json$/
+  /^\/(?<NAME>[0-9a-zA-Z/!\-_.*'()]+)\/(?<Z>\d+)\/(?<X>\d+)\/(?<Y>\d+).(?<EXT>[a-z]+)$/
+const TILESET_RE = /^\/(?<NAME>[0-9a-zA-Z/!\-_.*'()]+).json$/
 
 function tilePath(path: string) {
   const tileMatch = path.match(TILE_RE)
@@ -82,6 +82,8 @@ class R2Source implements Source {
     _signal?: AbortSignal,
     etag?: string,
   ): Promise<RangeResponse> {
+    // The `onlyIf` overload returns `R2ObjectBody | R2Object | null`: when the precondition fails,
+    // R2 returns a bodyless `R2Object` rather than an `R2ObjectBody`.
     const resp = await env.BUCKET.get(pmtilesPath(this.archiveName), {
       range: { offset, length },
       onlyIf: { etagMatches: etag },
@@ -91,17 +93,16 @@ class R2Source implements Source {
       throw new KeyNotFoundError("Archive not found")
     }
 
-    const o = resp as R2ObjectBody
-    if (!o.body) {
+    if (!("body" in resp)) {
       throw new EtagMismatch()
     }
 
-    const a = await o.arrayBuffer()
+    const a = await resp.arrayBuffer()
     return {
       data: a,
-      etag: o.etag,
-      cacheControl: o.httpMetadata?.cacheControl,
-      expires: o.httpMetadata?.cacheExpiry?.toISOString(),
+      etag: resp.etag,
+      cacheControl: resp.httpMetadata?.cacheControl,
+      expires: resp.httpMetadata?.cacheExpiry?.toISOString(),
     }
   }
 }
@@ -178,7 +179,7 @@ export const Route = createFileRoute("/tiles/$")({
             return new Response(undefined, { status: 204 })
           }
 
-          const contentType: Record<number, string> = {
+          const contentType: Partial<Record<TileType, string>> = {
             [TileType.Mvt]: "application/x-protobuf",
             [TileType.Png]: "image/png",
             [TileType.Jpeg]: "image/jpeg",

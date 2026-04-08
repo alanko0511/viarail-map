@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
+import fixtureData from "./fixtures/all-train-data.json"
 import { AllTrainDataSchema } from "@/server/schemas/train"
 import { transformTrainData } from "@/server/transform-train-data"
-import fixtureData from "./fixtures/all-train-data.json"
 
 const TIME_ZONE = "America/Toronto"
 const raw = AllTrainDataSchema.parse(fixtureData)
