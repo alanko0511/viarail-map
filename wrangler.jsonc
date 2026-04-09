@@ -7,13 +7,6 @@
   "observability": {
     "enabled": true
   },
-  "r2_buckets": [
-    {
-      "binding": "BUCKET",
-      "bucket_name": "pmtiles",
-      "remote": true
-    }
-  ],
   "routes": [
     {
       "pattern": "viarail-map.alanko.dev",
