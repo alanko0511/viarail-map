@@ -38,7 +38,7 @@ const mapStyle: maplibregl.StyleSpecification = {
   sources: {
     protomaps: {
       type: "vector",
-      url: "https://better-maps.alanko.dev/maps/tile/global/20260408/tile.json",
+      url: "https://maps.withazimuth.com/maps/tile/global/20260408/tile.json",
       attribution:
         '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
     },
