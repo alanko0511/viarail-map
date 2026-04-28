@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import * as z from "zod"
+
 import type { AllTrainData } from "@/server/schemas/train"
 import { AllTrainDataSchema } from "@/server/schemas/train"
 import { transformTrainData } from "@/server/transform-train-data"
@@ -18,7 +19,7 @@ export async function fetchAllTrainData(): Promise<AllTrainData> {
 
   if (!response.ok) {
     throw new Error(
-      `VIA Rail API error: ${response.status} ${response.statusText}`,
+      `VIA Rail API error: ${response.status} ${response.statusText}`
     )
   }
 

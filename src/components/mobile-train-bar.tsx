@@ -1,5 +1,5 @@
-import { Route as RootRoute } from "@/routes/__root"
 import { useSidebar } from "@/components/ui/sidebar"
+import { Route as RootRoute } from "@/routes/__root"
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-US", {
@@ -13,9 +13,7 @@ export function MobileTrainBar({ trainId }: { trainId: string | undefined }) {
   const train = trainId ? trainData[trainId] : undefined
   const { toggleSidebar } = useSidebar()
 
-  const nextStop = train?.stops.find(
-    (s) => s.status === "coming",
-  )
+  const nextStop = train?.stops.find((s) => s.status === "coming")
 
   const nextStopTime =
     nextStop?.arrival?.estimated ?? nextStop?.arrival?.scheduled
