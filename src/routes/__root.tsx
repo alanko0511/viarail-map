@@ -1,3 +1,4 @@
+import { TanStackDevtools } from "@tanstack/react-devtools"
 import {
   HeadContent,
   Scripts,
@@ -5,22 +6,23 @@ import {
   useMatch,
 } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
-import { TanStackDevtools } from "@tanstack/react-devtools"
 import { configure } from "onedollarstats"
 import { useEffect } from "react"
-import appCss from "../styles.css?url"
-import { getTrainData } from "@/server/trains"
-import { getGeolocation } from "@/server/geolocation"
+
 import { AppSidebar } from "@/components/app-sidebar"
 import { TrainMap } from "@/components/map"
+import { MobileTrainBar } from "@/components/mobile-train-bar"
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { MobileTrainBar } from "@/components/mobile-train-bar"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { getGeolocation } from "@/server/geolocation"
+import { getTrainData } from "@/server/trains"
+
+import appCss from "../styles.css?url"
 
 export const Route = createRootRoute({
   loader: async () => {
@@ -31,9 +33,10 @@ export const Route = createRootRoute({
 
     return {
       trainData:
-        trainResult.status === "fulfilled" ? trainResult.value : ({} as Record<string, never>),
-      geolocation:
-        geoResult.status === "fulfilled" ? geoResult.value : null,
+        trainResult.status === "fulfilled"
+          ? trainResult.value
+          : ({} as Record<string, never>),
+      geolocation: geoResult.status === "fulfilled" ? geoResult.value : null,
     }
   },
   head: () => ({
@@ -86,7 +89,7 @@ function RootLayout() {
         <AppSidebar />
         <SidebarInset className="overflow-hidden">
           <div className="relative flex h-full flex-1 flex-col">
-            <SidebarTrigger className="absolute left-2 top-2 z-10 max-md:hidden" />
+            <SidebarTrigger className="absolute top-2 left-2 z-10 max-md:hidden" />
             {isMobile && <MobileTrainBar trainId={activeTrainId} />}
             <div className="flex-1">
               <TrainMap activeTrainId={activeTrainId} />

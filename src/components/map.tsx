@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import Map, { Layer, Marker, Source } from "react-map-gl/maplibre"
 import { layers, namedFlavor } from "@protomaps/basemaps"
 import { useNavigate, useRouter } from "@tanstack/react-router"
+import type { FeatureCollection } from "geojson"
 import { ArrowUp, LocateFixed, LocateOff } from "lucide-react"
 import type maplibregl from "maplibre-gl"
-import "maplibre-gl/dist/maplibre-gl.css"
-import type { MapRef } from "react-map-gl/maplibre"
 import type { FilterSpecification } from "maplibre-gl"
-import type { FeatureCollection } from "geojson"
-import { Route as RootRoute } from "@/routes/__root"
+
+import "maplibre-gl/dist/maplibre-gl.css"
+import { useCallback, useEffect, useRef, useState } from "react"
+import Map, { Layer, Marker, Source } from "react-map-gl/maplibre"
+import type { MapRef } from "react-map-gl/maplibre"
+
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
 import {
@@ -16,6 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Route as RootRoute } from "@/routes/__root"
 
 const PRIMARY_COLOR = "#efb100"
 
@@ -39,8 +41,7 @@ const mapStyle: maplibregl.StyleSpecification = {
     protomaps: {
       type: "vector",
       url: "https://maps.withazimuth.com/maps/tile/global/20260408/tile.json",
-      attribution:
-        '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
     },
   },
   layers: layers("protomaps", namedFlavor("black"), { lang: "en" }),
@@ -110,8 +111,8 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   useEffect(() => {
     Promise.all(
       ROUTE_FILES.map((name) =>
-        fetch(`/viarail/${name}.json`).then((r) => r.json<FeatureCollection>()),
-      ),
+        fetch(`/viarail/${name}.json`).then((r) => r.json<FeatureCollection>())
+      )
     ).then((collections) => {
       const merged: FeatureCollection = {
         type: "FeatureCollection",
@@ -148,14 +149,11 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   }, [following, trainData, activeTrainId])
 
   // Disable follow when user interacts with the map
-  const handleMoveStart = useCallback(
-    (e: { originalEvent?: unknown }) => {
-      if (e.originalEvent) {
-        setFollowing(false)
-      }
-    },
-    [],
-  )
+  const handleMoveStart = useCallback((e: { originalEvent?: unknown }) => {
+    if (e.originalEvent) {
+      setFollowing(false)
+    }
+  }, [])
 
   const handleToggleFollow = useCallback(() => {
     setFollowing((prev) => {

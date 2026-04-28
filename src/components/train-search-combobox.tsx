@@ -1,7 +1,5 @@
 import { useNavigate } from "@tanstack/react-router"
 
-import { useIsMobile } from "@/hooks/use-mobile"
-import { Route as RootRoute } from "@/routes/__root"
 import {
   NativeSelect,
   NativeSelectOptGroup,
@@ -17,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { Route as RootRoute } from "@/routes/__root"
 
 export function TrainSearchCombobox() {
   const navigate = useNavigate()

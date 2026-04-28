@@ -1,5 +1,5 @@
-import * as React from "react"
 import { Link, useMatch } from "@tanstack/react-router"
+import * as React from "react"
 
 import { TrainSearchCombobox } from "@/components/train-search-combobox"
 import { TrainTimeline } from "@/components/train-timeline"
@@ -24,7 +24,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link to="/" />} variant="default">
+            <SidebarMenuButton
+              size="lg"
+              render={<Link to="/" />}
+              variant="default"
+            >
               <span className="truncate font-medium">VIA Rail Map</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

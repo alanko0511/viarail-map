@@ -12,7 +12,7 @@ export const getGeolocation = createServerFn({ method: "GET" }).handler(
     try {
       const res = await fetch(
         `http://ip-api.com/json/${ip}?fields=status,lat,lon,countryCode`,
-        { signal: AbortSignal.timeout(1000) },
+        { signal: AbortSignal.timeout(1000) }
       )
       if (!res.ok) return null
 
@@ -28,5 +28,5 @@ export const getGeolocation = createServerFn({ method: "GET" }).handler(
     } catch {
       return null
     }
-  },
+  }
 )

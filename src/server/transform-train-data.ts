@@ -1,5 +1,5 @@
 import { formatInTimeZone } from "date-fns-tz"
-import type { AllTrainData, StationTime, Train } from "@/server/schemas/train"
+
 import type {
   ProcessedStop,
   ProcessedTrain,
@@ -7,11 +7,12 @@ import type {
   StationStatus,
   TimePair,
 } from "@/server/schemas/processed-train"
+import type { AllTrainData, StationTime, Train } from "@/server/schemas/train"
 
 function deriveStationStatuses(
   times: Array<StationTime>,
   trainDeparted: boolean,
-  trainArrived: boolean,
+  trainArrived: boolean
 ): Array<StationStatus> {
   if (!trainDeparted) {
     return times.map(() => "coming")
@@ -41,27 +42,25 @@ function convertTimestamp(utcIso: string, timeZone: string): string {
   return formatInTimeZone(
     new Date(utcIso),
     timeZone,
-    "yyyy-MM-dd'T'HH:mm:ssXXX",
+    "yyyy-MM-dd'T'HH:mm:ssXXX"
   )
 }
 
 function toTimePair(
   raw: { scheduled: string; estimated?: string | null } | undefined,
-  timeZone: string,
+  timeZone: string
 ): TimePair | null {
   if (!raw) return null
   return {
     scheduled: convertTimestamp(raw.scheduled, timeZone),
-    estimated: raw.estimated
-      ? convertTimestamp(raw.estimated, timeZone)
-      : null,
+    estimated: raw.estimated ? convertTimestamp(raw.estimated, timeZone) : null,
   }
 }
 
 function transformStop(
   raw: StationTime,
   status: StationStatus,
-  timeZone: string,
+  timeZone: string
 ): ProcessedStop {
   return {
     station: raw.station,
@@ -89,14 +88,14 @@ function transformTrain(raw: Train, timeZone: string): ProcessedTrain {
     lastUpdated: raw.poll ?? null,
     alerts: raw.alerts ?? [],
     stops: raw.times.map((stop, i) =>
-      transformStop(stop, statuses[i], timeZone),
+      transformStop(stop, statuses[i], timeZone)
     ),
   }
 }
 
 export function transformTrainData(
   raw: AllTrainData,
-  timeZone: string,
+  timeZone: string
 ): ProcessedTrainData {
   const result: ProcessedTrainData = {}
   for (const [id, train] of Object.entries(raw)) {

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest"
-import fixtureData from "./fixtures/all-train-data.json"
+
 import { AllTrainDataSchema } from "@/server/schemas/train"
 import { transformTrainData } from "@/server/transform-train-data"
+
+import fixtureData from "./fixtures/all-train-data.json"
 
 const TIME_ZONE = "America/Toronto"
 const raw = AllTrainDataSchema.parse(fixtureData)
@@ -138,7 +140,7 @@ describe("transformTrainData", () => {
   describe("alerts", () => {
     it("defaults to empty array when no alerts", () => {
       const trainWithoutAlerts = Object.values(processed).find(
-        (t) => t.alerts.length === 0,
+        (t) => t.alerts.length === 0
       )
       expect(trainWithoutAlerts).toBeDefined()
       expect(trainWithoutAlerts!.alerts).toEqual([])
@@ -146,7 +148,7 @@ describe("transformTrainData", () => {
 
     it("preserves alerts when present", () => {
       const trainWithAlerts = Object.values(processed).find(
-        (t) => t.alerts.length > 0,
+        (t) => t.alerts.length > 0
       )
       expect(trainWithAlerts).toBeDefined()
       expect(trainWithAlerts!.alerts[0]).toHaveProperty("header")

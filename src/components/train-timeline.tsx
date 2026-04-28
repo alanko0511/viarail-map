@@ -1,14 +1,14 @@
 import { CircleAlertIcon, CircleCheckIcon } from "lucide-react"
 
-import type {
-  ProcessedStop,
-  StationStatus,
-} from "@/server/schemas/processed-train"
-import { Route as RootRoute } from "@/routes/__root"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
+import { Route as RootRoute } from "@/routes/__root"
+import type {
+  ProcessedStop,
+  StationStatus,
+} from "@/server/schemas/processed-train"
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-US", {
@@ -90,8 +90,7 @@ function TimelineStop({
   isLast: boolean
   nextStatus: StationStatus | undefined
 }) {
-  const showDelay =
-    stop.delayMinutes !== null && stop.delayMinutes > 0
+  const showDelay = stop.delayMinutes !== null && stop.delayMinutes > 0
 
   // Line color: blue solid if current stop is left or arrived, gray dashed otherwise
   const lineIsSolid =
@@ -107,10 +106,8 @@ function TimelineStop({
         {!isLast && (
           <div
             className={cn(
-              "w-0.5 flex-1 min-h-4",
-              lineIsBlue || lineIsSolid
-                ? "bg-blue-500"
-                : "bg-muted-foreground",
+              "min-h-4 w-0.5 flex-1",
+              lineIsBlue || lineIsSolid ? "bg-blue-500" : "bg-muted-foreground"
             )}
           />
         )}
@@ -124,7 +121,7 @@ function TimelineStop({
             <Badge
               className={cn(
                 "h-5 rounded-full px-1.5 text-[10px] font-semibold",
-                getDelayColor(stop.delayMinutes!),
+                getDelayColor(stop.delayMinutes!)
               )}
             >
               +{stop.delayMinutes}M
@@ -161,7 +158,6 @@ export function TrainTimeline({ trainId }: { trainId: string }) {
   const { trainData } = RootRoute.useLoaderData()
   const train = trainData[trainId]
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- trainId may not exist in data
   if (!train) {
     return (
       <SidebarGroup>
