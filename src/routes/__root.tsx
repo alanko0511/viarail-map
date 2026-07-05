@@ -1,11 +1,4 @@
-import { TanStackDevtools } from "@tanstack/react-devtools"
-import {
-  HeadContent,
-  Scripts,
-  createRootRoute,
-  useMatch,
-} from "@tanstack/react-router"
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
+import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { configure } from "onedollarstats"
 import { useEffect } from "react"
 
@@ -18,25 +11,22 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { useActiveTrainId } from "@/hooks/use-active-train-id"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { getGeolocation } from "@/server/geolocation"
 import { getTrainData } from "@/server/trains"
 
 import appCss from "../styles.css?url"
 
 export const Route = createRootRoute({
   loader: async () => {
-    const [trainResult, geoResult] = await Promise.allSettled([
-      getTrainData({ data: { timeZone: "America/Toronto" } }),
-      getGeolocation(),
-    ])
-
-    return {
-      trainData:
-        trainResult.status === "fulfilled"
-          ? trainResult.value
-          : ({} as Record<string, never>),
-      geolocation: geoResult.status === "fulfilled" ? geoResult.value : null,
+    try {
+      return {
+        trainData: await getTrainData({
+          data: { timeZone: "America/Toronto" },
+        }),
+      }
+    } catch {
+      return { trainData: {} as Record<string, never> }
     }
   },
   head: () => ({
@@ -76,12 +66,7 @@ function RootLayout() {
   }, [])
 
   const isMobile = useIsMobile()
-  const trainMatch = useMatch({
-    from: "/train/$trainId",
-    shouldThrow: false,
-  })
-
-  const activeTrainId = trainMatch?.params.trainId
+  const activeTrainId = useActiveTrainId()
 
   return (
     <TooltipProvider>
@@ -109,17 +94,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
         <Scripts />
       </body>
     </html>

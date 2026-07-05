@@ -15,12 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useActiveTrainId } from "@/hooks/use-active-train-id"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Route as RootRoute } from "@/routes/__root"
 
 export function TrainSearchCombobox() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
+  const activeTrainId = useActiveTrainId()
   const { trainData } = RootRoute.useLoaderData()
 
   const activeIds: Array<string> = []
@@ -43,7 +45,7 @@ export function TrainSearchCombobox() {
     return (
       <NativeSelect
         className="w-full"
-        defaultValue=""
+        value={activeTrainId ?? ""}
         onChange={(e) => handleChange(e.target.value)}
       >
         <NativeSelectOption value="" disabled>
@@ -69,6 +71,7 @@ export function TrainSearchCombobox() {
 
   return (
     <Select
+      value={activeTrainId ?? null}
       onValueChange={(value: string | null) => value && handleChange(value)}
     >
       <SelectTrigger className="w-full">

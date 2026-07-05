@@ -1,4 +1,4 @@
-import { Link, useMatch } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router"
 import * as React from "react"
 
 import { TrainSearchCombobox } from "@/components/train-search-combobox"
@@ -12,12 +12,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useActiveTrainId } from "@/hooks/use-active-train-id"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const trainMatch = useMatch({
-    from: "/train/$trainId",
-    shouldThrow: false,
-  })
+  const activeTrainId = useActiveTrainId()
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -37,8 +35,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        {trainMatch ? (
-          <TrainTimeline trainId={trainMatch.params.trainId} />
+        {activeTrainId ? (
+          <TrainTimeline trainId={activeTrainId} />
         ) : (
           <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-muted-foreground">
             Search or click on a train to see details
