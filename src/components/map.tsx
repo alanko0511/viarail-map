@@ -1,12 +1,17 @@
 import { useNavigate, useRouter } from "@tanstack/react-router"
 import type { FeatureCollection } from "geojson"
-import { ArrowUp, LocateFixed, LocateOff } from "lucide-react"
+import { ArrowUp, TrainFront } from "lucide-react"
 import type { FilterSpecification } from "maplibre-gl"
 
 import "maplibre-gl/dist/maplibre-gl.css"
 import { useCallback, useEffect, useRef, useState } from "react"
-import Map, { Layer, Marker, Source } from "react-map-gl/maplibre"
-import type { MapRef } from "react-map-gl/maplibre"
+import Map, {
+  GeolocateControl,
+  Layer,
+  Marker,
+  Source,
+} from "react-map-gl/maplibre"
+import type { GeolocateControlInstance, MapRef } from "react-map-gl/maplibre"
 
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
@@ -15,6 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useAutoGeolocate } from "@/hooks/use-auto-geolocate"
 import { Route as RootRoute } from "@/routes/__root"
 
 const PRIMARY_COLOR = "#efb100"
@@ -83,9 +89,11 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   const [isClient, setIsClient] = useState(false)
   const [routeData, setRouteData] = useState<FeatureCollection | null>(null)
   const [following, setFollowing] = useState(false)
+  const [mapLoaded, setMapLoaded] = useState(false)
   const mapRef = useRef<MapRef>(null)
+  const geolocateControlRef = useRef<GeolocateControlInstance>(null)
   const prevTrainIdRef = useRef<string | undefined>(undefined)
-  const { trainData, geolocation } = RootRoute.useLoaderData()
+  const { trainData } = RootRoute.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
   const { setOpen, setOpenMobile, isMobile } = useSidebar()
@@ -93,6 +101,12 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  useAutoGeolocate({
+    enabled: mapLoaded,
+    skip: activeTrainId != null,
+    geolocateControlRef,
+  })
 
   useEffect(() => {
     Promise.all(
@@ -162,15 +176,26 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
     <Map
       ref={mapRef}
       initialViewState={{
-        longitude: geolocation?.lon ?? -79.38032,
-        latitude: geolocation?.lat ?? 43.64481,
+        longitude: -79.38032,
+        latitude: 43.64481,
         zoom: 9,
       }}
       style={{ width: "100%", height: "100%" }}
       maxBounds={[-143.789063, 40.313043, -50.273438, 83.753911]}
       mapStyle={MAP_STYLE_URL}
       onMoveStart={handleMoveStart}
+      onLoad={() => setMapLoaded(true)}
     >
+      <GeolocateControl
+        ref={geolocateControlRef}
+        position="top-right"
+        positionOptions={{
+          enableHighAccuracy: false,
+          timeout: 6000,
+          maximumAge: 60_000,
+        }}
+        fitBoundsOptions={{ maxZoom: 9 }}
+      />
       {routeData && (
         <Source id="train-routes" type="geojson" data={routeData}>
           <Layer {...lineLayer} />
@@ -252,11 +277,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
                 />
               }
             >
-              {following ? (
-                <LocateFixed className="size-4" />
-              ) : (
-                <LocateOff className="size-4" />
-              )}
+              <TrainFront className="size-4" />
             </TooltipTrigger>
             <TooltipContent side="right">
               {following ? "Following train" : "Follow train"}

@@ -13,24 +13,20 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useActiveTrainId } from "@/hooks/use-active-train-id"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { getGeolocation } from "@/server/geolocation"
 import { getTrainData } from "@/server/trains"
 
 import appCss from "../styles.css?url"
 
 export const Route = createRootRoute({
   loader: async () => {
-    const [trainResult, geoResult] = await Promise.allSettled([
-      getTrainData({ data: { timeZone: "America/Toronto" } }),
-      getGeolocation(),
-    ])
-
-    return {
-      trainData:
-        trainResult.status === "fulfilled"
-          ? trainResult.value
-          : ({} as Record<string, never>),
-      geolocation: geoResult.status === "fulfilled" ? geoResult.value : null,
+    try {
+      return {
+        trainData: await getTrainData({
+          data: { timeZone: "America/Toronto" },
+        }),
+      }
+    } catch {
+      return { trainData: {} as Record<string, never> }
     }
   },
   head: () => ({
