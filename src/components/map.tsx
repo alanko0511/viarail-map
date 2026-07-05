@@ -1,8 +1,6 @@
-import { layers, namedFlavor } from "@protomaps/basemaps"
 import { useNavigate, useRouter } from "@tanstack/react-router"
 import type { FeatureCollection } from "geojson"
 import { ArrowUp, LocateFixed, LocateOff } from "lucide-react"
-import type maplibregl from "maplibre-gl"
 import type { FilterSpecification } from "maplibre-gl"
 
 import "maplibre-gl/dist/maplibre-gl.css"
@@ -32,20 +30,8 @@ const ROUTE_FILES = [
   "whiteriver",
 ]
 
-const mapStyle: maplibregl.StyleSpecification = {
-  version: 8,
-  glyphs:
-    "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
-  sprite: "https://protomaps.github.io/basemaps-assets/sprites/v4/black",
-  sources: {
-    protomaps: {
-      type: "vector",
-      url: "https://maps.withazimuth.com/maps/tile/global/20260408/tile.json",
-      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    },
-  },
-  layers: layers("protomaps", namedFlavor("black"), { lang: "en" }),
-}
+const MAP_STYLE_URL =
+  "https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json"
 
 const lineLayer = {
   id: "train-lines",
@@ -169,7 +155,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   }, [activeTrainId, trainData])
 
   if (!isClient) {
-    return <div className="h-full w-full bg-[#000000]" />
+    return <div className="h-full w-full bg-[#333333]" />
   }
 
   return (
@@ -182,7 +168,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
       }}
       style={{ width: "100%", height: "100%" }}
       maxBounds={[-143.789063, 40.313043, -50.273438, 83.753911]}
-      mapStyle={mapStyle}
+      mapStyle={MAP_STYLE_URL}
       onMoveStart={handleMoveStart}
     >
       {routeData && (
