@@ -25,17 +25,6 @@ import { Route as RootRoute } from "@/routes/__root"
 
 const PRIMARY_COLOR = "#efb100"
 
-const ROUTE_FILES = [
-  "canadian",
-  "corridor",
-  "ocean",
-  "churchill",
-  "jonquiere",
-  "senneterre",
-  "rupert",
-  "whiteriver",
-]
-
 const MAP_STYLE_URL =
   "https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json"
 
@@ -109,17 +98,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   })
 
   useEffect(() => {
-    Promise.all(
-      ROUTE_FILES.map((name) =>
-        fetch(`/viarail/${name}.json`).then((r) => r.json<FeatureCollection>())
-      )
-    ).then((collections) => {
-      const merged: FeatureCollection = {
-        type: "FeatureCollection",
-        features: collections.flatMap((c) => c.features),
-      }
-      setRouteData(merged)
-    })
+    import("@/data/route-geometry").then((m) => setRouteData(m.routeGeometry))
   }, [])
 
   useEffect(() => {
