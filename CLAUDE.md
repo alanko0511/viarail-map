@@ -41,7 +41,7 @@ Package manager is **Bun**.
 - `src/hooks/` — Custom React hooks (e.g., `use-mobile.ts`)
 - `src/server/` — Server-side logic: train data fetching, transformation, and Zod schemas
 - `src/lib/utils.ts` — `cn()` helper (clsx + tailwind-merge)
-- `public/viarail/` — Static JSON data for train routes (Canadian, Corridor, Ocean, etc.)
+- `src/data/viarail/` — Static JSON data for train routes (Canadian, Corridor, Ocean, etc.). Route files are bundled into a single hashed chunk via `src/data/route-geometry.ts` — when adding a new route JSON here, also import it in `route-geometry.ts` or it won't appear on the map
 
 ### shadcn/ui
 
