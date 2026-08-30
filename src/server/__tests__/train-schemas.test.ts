@@ -2,7 +2,7 @@ import { expect, it } from "vitest"
 
 import { AllTrainDataSchema } from "@/server/schemas/train"
 
-import fixtureData from "./fixtures/all-train-data.json"
+import fixtureData from "./fixtures/legacy-2026-04-04.json"
 
 it("parses the real API fixture data", () => {
   const result = AllTrainDataSchema.parse(fixtureData)

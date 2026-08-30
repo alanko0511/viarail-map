@@ -1,22 +1,15 @@
 import { useSidebar } from "@/components/ui/sidebar"
-import { Route as RootRoute } from "@/routes/__root"
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  })
-}
+import { useTrainViews } from "@/hooks/use-train-views"
+import { formatStopTime } from "@/lib/format-time"
 
 export function MobileTrainBar({ trainId }: { trainId: string | undefined }) {
-  const { trainData } = RootRoute.useLoaderData()
-  const train = trainId ? trainData[trainId] : undefined
+  const trains = useTrainViews()
+  const train = trainId ? trains.get(trainId) : undefined
   const { toggleSidebar } = useSidebar()
 
-  const nextStop = train?.stops.find((s) => s.status === "coming")
-
+  const nextStop = train?.stops.find((stop) => stop.status === "coming")
   const nextStopTime =
-    nextStop?.arrival?.estimated ?? nextStop?.arrival?.scheduled
+    nextStop?.arrival?.predicted ?? nextStop?.arrival?.scheduled
 
   return (
     <button
@@ -28,12 +21,13 @@ export function MobileTrainBar({ trainId }: { trainId: string | undefined }) {
         {train && trainId ? (
           <>
             <div className="text-xs font-medium text-white">
-              Train {trainId} — {train.from} → {train.to}
+              Train {train.number} → {train.headsign}
             </div>
             {nextStop && (
               <div className="text-xs text-white/70">
-                Next: {nextStop.station}
-                {nextStopTime && ` · ${formatTime(nextStopTime)}`}
+                Next: {nextStop.name}
+                {nextStopTime &&
+                  ` · ${formatStopTime(nextStopTime, nextStop.timezone)}`}
               </div>
             )}
           </>

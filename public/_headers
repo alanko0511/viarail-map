@@ -6,3 +6,7 @@
 
 /manifest.json
   Cache-Control: public, max-age=86400
+
+/gtfs/*
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *

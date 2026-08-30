@@ -13,11 +13,9 @@ const config = defineConfig({
       projects: ["./tsconfig.json"],
     }),
     tailwindcss(),
-    tanstackStart({
-      spa: {
-        enabled: true,
-      },
-    }),
+    // No SPA mode: routes server-render by default, and the map subtree opts
+    // out via `ssr: false` in src/routes/_map.tsx.
+    tanstackStart(),
     viteReact(),
   ],
 })

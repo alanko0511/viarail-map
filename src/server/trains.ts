@@ -1,9 +1,5 @@
-import { createServerFn } from "@tanstack/react-start"
-import * as z from "zod"
-
 import type { AllTrainData } from "@/server/schemas/train"
-import { AllTrainDataSchema } from "@/server/schemas/train"
-import { transformTrainData } from "@/server/transform-train-data"
+import { TrainSchema } from "@/server/schemas/train"
 
 const VIARAIL_API_URL = "https://tsimobile.viarail.ca/data/allData.json"
 
@@ -24,12 +20,28 @@ export async function fetchAllTrainData(): Promise<AllTrainData> {
   }
 
   const data = await response.json()
-  return AllTrainDataSchema.parse(data)
+  return parseAllTrainData(data)
 }
 
-export const getTrainData = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ timeZone: z.string() }))
-  .handler(async ({ data: { timeZone } }) => {
-    const raw = await fetchAllTrainData()
-    return transformTrainData(raw, timeZone)
-  })
+/**
+ * Parses the upstream payload one train at a time, dropping any train that
+ * fails validation instead of failing the whole feed. Upstream has changed
+ * shape without notice before (April vs August 2026), and one malformed train
+ * should not take the map down.
+ */
+export function parseAllTrainData(data: unknown): AllTrainData {
+  if (typeof data !== "object" || data === null) {
+    throw new Error("VIA Rail API returned a non-object payload")
+  }
+
+  const trains: AllTrainData = {}
+  for (const [key, value] of Object.entries(data)) {
+    const result = TrainSchema.safeParse(value)
+    if (result.success) {
+      trains[key] = result.data
+    } else {
+      console.warn(`Skipping unparseable train ${key}:`, result.error.message)
+    }
+  }
+  return trains
+}

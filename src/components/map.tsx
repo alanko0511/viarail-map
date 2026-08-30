@@ -1,7 +1,6 @@
-import { useNavigate, useRouter } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import type { FeatureCollection } from "geojson"
 import { ArrowUp, TrainFront } from "lucide-react"
-import type { FilterSpecification } from "maplibre-gl"
 
 import "maplibre-gl/dist/maplibre-gl.css"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -11,7 +10,11 @@ import Map, {
   Marker,
   Source,
 } from "react-map-gl/maplibre"
-import type { GeolocateControlInstance, MapRef } from "react-map-gl/maplibre"
+import type {
+  GeolocateControlInstance,
+  LayerProps,
+  MapRef,
+} from "react-map-gl/maplibre"
 
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
@@ -20,56 +23,89 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { stops as gtfsStops } from "@/data/gtfs"
 import { useAutoGeolocate } from "@/hooks/use-auto-geolocate"
-import { Route as RootRoute } from "@/routes/__root"
+import { useTrainViews } from "@/hooks/use-train-views"
 
 const PRIMARY_COLOR = "#efb100"
 
 const MAP_STYLE_URL =
   "https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json"
 
-const lineLayer = {
+const lineLayer: LayerProps = {
   id: "train-lines",
-  type: "line" as const,
-  filter: ["==", ["get", "type"], "alignment"] as FilterSpecification,
+  type: "line",
   paint: {
     "line-color": PRIMARY_COLOR,
     "line-width": 4,
   },
   layout: {
-    "line-join": "round" as const,
-    "line-cap": "round" as const,
+    "line-join": "round",
+    "line-cap": "round",
   },
 }
 
-const stationCircleLayer = {
+/**
+ * `rank` is how many trips call at a stop. VIA's GTFS has no notion of a major
+ * station, so prominence is derived from how much service a stop actually
+ * sees: busy stations show up first and stay largest as you zoom out.
+ */
+const stationCircleLayer: LayerProps = {
   id: "station-circles",
-  type: "circle" as const,
-  filter: ["==", ["get", "type"], "station-label"] as FilterSpecification,
+  type: "circle",
   paint: {
-    "circle-radius": 6,
+    "circle-radius": [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      4,
+      ["case", [">=", ["get", "rank"], 10], 4, 0],
+      8,
+      ["case", [">=", ["get", "rank"], 10], 6, 3],
+      11,
+      6,
+    ],
     "circle-color": PRIMARY_COLOR,
     "circle-stroke-width": 1,
     "circle-stroke-color": "#555555",
   },
 }
 
-const stationLabelLayer = {
+const stationLabelLayer: LayerProps = {
   id: "station-labels",
-  type: "symbol" as const,
-  filter: ["==", ["get", "type"], "station-label"] as FilterSpecification,
+  type: "symbol",
+  minzoom: 5,
+  filter: [
+    "step",
+    ["zoom"],
+    [">=", ["get", "rank"], 20],
+    7,
+    [">=", ["get", "rank"], 8],
+    9,
+    true,
+  ],
   layout: {
-    "text-field": ["get", "name"] as ["get", string],
+    "text-field": ["get", "name"],
     "text-font": ["Noto Sans Regular"],
-    "text-size": 12,
-    "text-offset": [0, -0.8] as [number, number],
-    "text-anchor": "bottom" as const,
+    "text-size": ["interpolate", ["linear"], ["get", "rank"], 1, 11, 30, 14],
+    "text-offset": [0, -0.8],
+    "text-anchor": "bottom",
   },
   paint: {
     "text-color": "#ffffff",
     "text-halo-color": "#555555",
     "text-halo-width": 1,
   },
+}
+
+/** Station points, built once from the bundled GTFS stop table. */
+const stationData: FeatureCollection = {
+  type: "FeatureCollection",
+  features: gtfsStops.map((stop) => ({
+    type: "Feature",
+    properties: { name: stop.name, code: stop.code, rank: stop.rank },
+    geometry: { type: "Point", coordinates: [stop.lon, stop.lat] },
+  })),
 }
 
 const ACTIVE_COLOR = "#fcc800"
@@ -82,9 +118,8 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   const mapRef = useRef<MapRef>(null)
   const geolocateControlRef = useRef<GeolocateControlInstance>(null)
   const prevTrainIdRef = useRef<string | undefined>(undefined)
-  const { trainData } = RootRoute.useLoaderData()
+  const trains = useTrainViews()
   const navigate = useNavigate()
-  const router = useRouter()
   const { setOpen, setOpenMobile, isMobile } = useSidebar()
 
   useEffect(() => {
@@ -97,35 +132,38 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
     geolocateControlRef,
   })
 
+  // 184 KB of line geometry, served as a static file so its cache lifetime is
+  // independent of the JS bundle.
   useEffect(() => {
-    import("@/data/route-geometry").then((m) => setRouteData(m.routeGeometry))
+    fetch("/gtfs/shapes.geojson")
+      .then((response) => response.json() as Promise<FeatureCollection>)
+      .then(setRouteData)
+      .catch(() => setRouteData(null))
   }, [])
-
-  useEffect(() => {
-    const interval = setInterval(() => router.invalidate(), 10_000)
-    return () => clearInterval(interval)
-  }, [router])
 
   // When activeTrainId changes, fly to the train and enable follow
   useEffect(() => {
     if (!activeTrainId || activeTrainId === prevTrainIdRef.current) return
     prevTrainIdRef.current = activeTrainId
 
-    const train = trainData[activeTrainId]
-    if (train.lat == null || train.lng == null) return
+    const position = trains.get(activeTrainId)?.position
+    if (!position) return
 
-    mapRef.current?.flyTo({ center: [train.lng, train.lat], zoom: 8 })
+    mapRef.current?.flyTo({ center: [position.lng, position.lat], zoom: 8 })
     setFollowing(true)
-  }, [activeTrainId, trainData])
+  }, [activeTrainId, trains])
 
   // When following and train data updates, keep centering on the train
   useEffect(() => {
     if (!following || !activeTrainId) return
-    const train = trainData[activeTrainId]
-    if (train.lat == null || train.lng == null) return
+    const position = trains.get(activeTrainId)?.position
+    if (!position) return
 
-    mapRef.current?.easeTo({ center: [train.lng, train.lat], duration: 500 })
-  }, [following, trainData, activeTrainId])
+    mapRef.current?.easeTo({
+      center: [position.lng, position.lat],
+      duration: 500,
+    })
+  }, [following, trains, activeTrainId])
 
   // Disable follow when user interacts with the map
   const handleMoveStart = useCallback((e: { originalEvent?: unknown }) => {
@@ -138,14 +176,17 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
     setFollowing((prev) => {
       const next = !prev
       if (next && activeTrainId) {
-        const train = trainData[activeTrainId]
-        if (train.lat != null && train.lng != null) {
-          mapRef.current?.flyTo({ center: [train.lng, train.lat], zoom: 8 })
+        const position = trains.get(activeTrainId)?.position
+        if (position) {
+          mapRef.current?.flyTo({
+            center: [position.lng, position.lat],
+            zoom: 8,
+          })
         }
       }
       return next
     })
-  }, [activeTrainId, trainData])
+  }, [activeTrainId, trains])
 
   if (!isClient) {
     return <div className="h-full w-full bg-[#333333]" />
@@ -178,18 +219,21 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
       {routeData && (
         <Source id="train-routes" type="geojson" data={routeData}>
           <Layer {...lineLayer} />
-          <Layer {...stationCircleLayer} />
-          <Layer {...stationLabelLayer} />
         </Source>
       )}
-      {Object.entries(trainData).map(([trainId, train]) => {
-        if (train.lat == null || train.lng == null) return null
-        const trainNumber = trainId.split(" ")[0]
+      <Source id="stations" type="geojson" data={stationData}>
+        <Layer {...stationCircleLayer} />
+        <Layer {...stationLabelLayer} />
+      </Source>
+      {[...trains.values()].map((train) => {
+        const { position } = train
+        if (!position) return null
+        const trainId = train.key
         return (
           <Marker
             key={trainId}
-            longitude={train.lng}
-            latitude={train.lat}
+            longitude={position.lng}
+            latitude={position.lat}
             anchor="center"
             style={{
               zIndex: trainId === activeTrainId ? 1 : 0,
@@ -210,7 +254,7 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
                     onClick={() => {
                       if (trainId === activeTrainId) {
                         mapRef.current?.flyTo({
-                          center: [train.lng!, train.lat!],
+                          center: [position.lng, position.lat],
                         })
                         setFollowing(true)
                       } else {
@@ -228,17 +272,17 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
                   />
                 }
               >
-                {trainNumber}
-                {train.direction != null && (
+                {train.number}
+                {position.bearing != null && (
                   <ArrowUp
                     className="size-3"
-                    style={{ transform: `rotate(${train.direction}deg)` }}
+                    style={{ transform: `rotate(${position.bearing}deg)` }}
                   />
                 )}
               </TooltipTrigger>
-              {train.speed != null && (
-                <TooltipContent>{train.speed} km/h</TooltipContent>
-              )}
+              <TooltipContent>
+                {Math.round(position.speedKmh)} km/h
+              </TooltipContent>
             </Tooltip>
           </Marker>
         )

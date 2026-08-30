@@ -1,0 +1,148 @@
+{
+  "60": {
+    "lat": 44.0,
+    "lng": -77.0,
+    "speed": 90,
+    "direction": null,
+    "poll": "2026-08-30T15:16:00Z",
+    "pollMin": 0,
+    "pollRadius": 22338,
+    "departed": true,
+    "arrived": false,
+    "from": "TORONTO",
+    "to": "OTTAWA",
+    "instance": "2026-08-30",
+    "times": [
+      {
+        "station": "Toronto",
+        "code": "TRTO",
+        "tz": "America/Toronto",
+        "scheduled": "2026-08-30T08:32:00-04:00",
+        "estimated": "2026-08-30T08:32:00-04:00",
+        "eta": "ARR",
+        "arrival": {
+          "scheduled": "2026-08-30T08:32:00-04:00",
+          "estimated": "2026-08-30T08:32:00-04:00"
+        },
+        "departure": {
+          "scheduled": "2026-08-30T08:32:00-04:00",
+          "estimated": "2026-08-30T08:32:00-04:00"
+        },
+        "diff": "goo",
+        "diffMin": 0
+      },
+      {
+        "station": "Guildwood",
+        "code": "GUIL",
+        "tz": "America/Toronto",
+        "scheduled": "2026-08-30T08:50:00-04:00",
+        "estimated": "2026-08-30T08:50:00-04:00",
+        "eta": "ARR",
+        "arrival": {
+          "scheduled": "2026-08-30T08:50:00-04:00",
+          "estimated": "2026-08-30T08:50:00-04:00"
+        },
+        "departure": {
+          "scheduled": "2026-08-30T08:50:00-04:00",
+          "estimated": "2026-08-30T08:50:00-04:00"
+        },
+        "diff": "goo",
+        "diffMin": 0
+      }
+    ]
+  },
+  "62": {
+    "departed": true,
+    "arrived": false,
+    "from": "TORONTO",
+    "to": "OTTAWA",
+    "instance": "2026-08-30",
+    "times": [
+      {
+        "station": "Toronto",
+        "code": "TRTO",
+        "tz": "America/Toronto",
+        "scheduled": "2026-08-30T08:32:00-04:00",
+        "estimated": "2026-08-30T08:32:00-04:00",
+        "eta": "ARR",
+        "arrival": {
+          "scheduled": "2026-08-30T08:32:00-04:00",
+          "estimated": "2026-08-30T08:32:00-04:00"
+        },
+        "departure": {
+          "scheduled": "2026-08-30T08:32:00-04:00",
+          "estimated": "2026-08-30T08:32:00-04:00"
+        },
+        "diff": "goo",
+        "diffMin": 0
+      },
+      {
+        "station": "Guildwood",
+        "code": "GUIL",
+        "tz": "America/Toronto",
+        "scheduled": "2026-08-30T08:50:00-04:00",
+        "estimated": "&mdash;",
+        "eta": "&mdash;",
+        "cancelled": true,
+        "arrival": {
+          "scheduled": "2026-08-30T08:50:00-04:00",
+          "estimated": null
+        }
+      },
+      {
+        "station": "Oshawa",
+        "code": "OSHA",
+        "tz": "America/Toronto",
+        "scheduled": "2026-08-30T09:09:00-04:00",
+        "estimated": "2026-08-30T09:09:00-04:00",
+        "eta": "ARR",
+        "arrival": {
+          "scheduled": "2026-08-30T09:09:00-04:00",
+          "estimated": "2026-08-30T09:09:00-04:00"
+        },
+        "departure": {
+          "scheduled": "2026-08-30T09:09:00-04:00",
+          "estimated": "2026-08-30T09:09:00-04:00"
+        },
+        "diff": "goo",
+        "diffMin": 0,
+        "replaced": {
+          "mode": "train",
+          "services": [
+            "651",
+            "653"
+          ]
+        }
+      }
+    ]
+  },
+  "9999": {
+    "lat": 45.0,
+    "lng": -75.0,
+    "speed": 100,
+    "direction": 90.0,
+    "poll": "2026-08-30T15:16:00Z",
+    "pollMin": 0,
+    "departed": true,
+    "arrived": false,
+    "from": "OTTAWA",
+    "to": "TORONTO",
+    "instance": "2026-08-30",
+    "times": [
+      {
+        "station": "Ottawa",
+        "code": "OTTW",
+        "tz": "America/Toronto",
+        "scheduled": "2026-08-30T10:00:00-04:00",
+        "estimated": "2026-08-30T10:00:00-04:00",
+        "eta": "ARR",
+        "departure": {
+          "scheduled": "2026-08-30T10:00:00-04:00",
+          "estimated": "2026-08-30T10:00:00-04:00"
+        },
+        "diff": "goo",
+        "diffMin": 0
+      }
+    ]
+  }
+}

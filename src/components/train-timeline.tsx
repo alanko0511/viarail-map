@@ -3,19 +3,10 @@ import { CircleAlertIcon, CircleCheckIcon } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar"
+import { useTrainViews } from "@/hooks/use-train-views"
+import { formatStopTime } from "@/lib/format-time"
 import { cn } from "@/lib/utils"
-import { Route as RootRoute } from "@/routes/__root"
-import type {
-  ProcessedStop,
-  StationStatus,
-} from "@/server/schemas/processed-train"
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  })
-}
+import type { StopStatus, StopTimeView, StopView } from "@/lib/view-model"
 
 function getDelayColor(minutes: number): string {
   if (minutes < 5) return "bg-green-500/70 text-white"
@@ -30,7 +21,7 @@ function getEstimatedColor(delayMinutes: number | null): string {
   return "text-red-500/70"
 }
 
-function StopIcon({ status }: { status: StationStatus }) {
+function StopIcon({ status }: { status: StopStatus }) {
   if (status === "left") {
     return (
       <div className="flex size-6 items-center justify-center rounded-full bg-blue-500 text-white">
@@ -57,24 +48,26 @@ function StopIcon({ status }: { status: StationStatus }) {
 
 function TimeRow({
   label,
-  scheduled,
-  estimated,
+  time,
+  timeZone,
   delayMinutes,
 }: {
   label: string
-  scheduled: string | null
-  estimated: string | null
+  time: StopTimeView | null
+  timeZone: string
   delayMinutes: number | null
 }) {
-  if (!scheduled) return null
+  if (!time) return null
 
   return (
     <div className="flex items-baseline gap-2 text-xs">
       <span className="w-20 text-muted-foreground">{label}:</span>
-      <span className="font-medium">{formatTime(scheduled)}</span>
-      {estimated && (
+      <span className="font-medium">
+        {formatStopTime(time.scheduled, timeZone)}
+      </span>
+      {time.predicted && (
         <span className={cn(getEstimatedColor(delayMinutes))}>
-          (Est: {formatTime(estimated)})
+          (Est: {formatStopTime(time.predicted, timeZone)})
         </span>
       )}
     </div>
@@ -86,9 +79,9 @@ function TimelineStop({
   isLast,
   nextStatus,
 }: {
-  stop: ProcessedStop
+  stop: StopView
   isLast: boolean
-  nextStatus: StationStatus | undefined
+  nextStatus: StopStatus | undefined
 }) {
   const showDelay = stop.delayMinutes !== null && stop.delayMinutes > 0
 
@@ -116,7 +109,12 @@ function TimelineStop({
       {/* Content */}
       <div className="flex-1 pb-6">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{stop.station}</span>
+          <span className="text-sm font-medium">{stop.name}</span>
+          {stop.cancelled && (
+            <Badge className="h-5 rounded-full bg-red-500/70 px-1.5 text-[10px] font-semibold text-white">
+              CANCELLED
+            </Badge>
+          )}
           {showDelay && (
             <Badge
               className={cn(
@@ -130,19 +128,17 @@ function TimelineStop({
         </div>
 
         <div className="mt-1 space-y-0.5">
-          {stop.arrival && (
-            <TimeRow
-              label="Arrival"
-              scheduled={stop.arrival.scheduled}
-              estimated={stop.arrival.estimated}
-              delayMinutes={stop.delayMinutes}
-            />
-          )}
-          {stop.departure && (
+          <TimeRow
+            label="Arrival"
+            time={stop.arrival}
+            timeZone={stop.timezone}
+            delayMinutes={stop.delayMinutes}
+          />
+          {stop.showDwell && (
             <TimeRow
               label="Departure"
-              scheduled={stop.departure.scheduled}
-              estimated={stop.departure.estimated}
+              time={stop.departure}
+              timeZone={stop.timezone}
               delayMinutes={stop.delayMinutes}
             />
           )}
@@ -155,8 +151,8 @@ function TimelineStop({
 }
 
 export function TrainTimeline({ trainId }: { trainId: string }) {
-  const { trainData } = RootRoute.useLoaderData()
-  const train = trainData[trainId]
+  const trains = useTrainViews()
+  const train = trains.get(trainId)
 
   if (!train) {
     return (
@@ -172,19 +168,24 @@ export function TrainTimeline({ trainId }: { trainId: string }) {
   return (
     <SidebarGroup>
       <SidebarGroupLabel>
-        Train {trainId} — {train.from} → {train.to}
+        Train {train.number} → {train.headsign}
       </SidebarGroupLabel>
+      {train.routeLongName && (
+        <div className="px-2 text-xs text-muted-foreground">
+          {train.routeLongName}
+        </div>
+      )}
       {train.alerts.length > 0 && (
         <div className="space-y-2 px-2 pt-2">
           {train.alerts.map((alert, i) => (
             <Alert key={i} variant="destructive">
               <CircleAlertIcon />
-              <AlertTitle>{alert.header.en}</AlertTitle>
+              <AlertTitle>{alert.header}</AlertTitle>
               <AlertDescription>
-                {alert.description.en}
-                {alert.url.en && (
+                {alert.description}
+                {alert.url && (
                   <a
-                    href={alert.url.en}
+                    href={alert.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="ml-1 underline"
@@ -198,6 +199,11 @@ export function TrainTimeline({ trainId }: { trainId: string }) {
         </div>
       )}
       <div className="px-2 py-2">
+        {train.stopsAreTruncated && (
+          <p className="px-2 pb-3 text-xs text-muted-foreground">
+            VIA publishes only part of this train's stop list.
+          </p>
+        )}
         {train.stops.map((stop, i) => (
           <TimelineStop
             key={stop.code + i}

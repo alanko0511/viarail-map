@@ -17,18 +17,20 @@ import {
 } from "@/components/ui/select"
 import { useActiveTrainId } from "@/hooks/use-active-train-id"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { Route as RootRoute } from "@/routes/__root"
+import { useTrainViews } from "@/hooks/use-train-views"
 
 export function TrainSearchCombobox() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const activeTrainId = useActiveTrainId()
-  const { trainData } = RootRoute.useLoaderData()
+  const trains = useTrainViews()
 
+  // A position is the only reliable sign a train is actually running: the
+  // tracker's own "departed" flag just means it has seen a GPS fix.
   const activeIds: Array<string> = []
   const notInServiceIds: Array<string> = []
-  for (const [id, train] of Object.entries(trainData)) {
-    if (train.departed && !train.arrived) {
+  for (const [id, train] of trains) {
+    if (train.position) {
       activeIds.push(id)
     } else {
       notInServiceIds.push(id)

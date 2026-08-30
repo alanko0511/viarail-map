@@ -1,2 +1,6 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# VIA publishes these files with CRLF line endings. They are redistributed
+# unmodified at /gtfs/, and the build regenerates them from the zip, so git
+# must not normalise them or the CI drift check will fail forever.
+public/gtfs/*.txt -text
+data/gtfs/viarail.zip binary
+public/gtfs/viarail.zip binary
