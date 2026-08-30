@@ -72,6 +72,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             you can use elsewhere.
           </p>
           <p>
+            Contains information licensed under the{" "}
+            <a
+              href="https://open.canada.ca/en/open-government-licence-canada"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground"
+            >
+              Open Government Licence – Canada
+            </a>
+            .
+          </p>
+          <p>
             The project is not affiliated with VIA Rail Canada. Check out{" "}
             <a
               href="https://www.viarail.ca"

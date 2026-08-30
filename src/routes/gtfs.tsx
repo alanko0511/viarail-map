@@ -82,6 +82,36 @@ function GtfsDocs() {
         {feedInfo.builtAt}. sha256 {feedInfo.sourceSha256.slice(0, 16)}…
       </p>
 
+      <h2 className="mt-8 mb-2 text-lg font-medium">Licence</h2>
+      <p className="mb-3">
+        VIA releases its GTFS schedule under the Open Government Licence –
+        Canada version 2, which is what allows the copy above and the realtime
+        feeds derived from it. If you use either, the same terms reach you, so
+        carry the attribution on.
+      </p>
+      <p className="mb-3">
+        Contains information licensed under the{" "}
+        <a
+          href="https://open.canada.ca/en/open-government-licence-canada"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-foreground"
+        >
+          Open Government Licence – Canada
+        </a>
+        .
+      </p>
+      <p className="mb-3">
+        The realtime feeds are a different matter. They are built by reading
+        VIA's public train tracker, which publishes no terms at all, so nothing
+        here grants you rights over that data and none are implied. Treat the
+        realtime endpoints as a best effort favour rather than something to
+        build a business on.
+      </p>
+      <p className="mb-3">
+        Everything is served as is. VIA warrants none of it and neither do I.
+      </p>
+
       <h2 className="mt-8 mb-2 text-lg font-medium">
         What the feed cannot tell you
       </h2>
