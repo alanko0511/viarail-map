@@ -26,6 +26,7 @@ Package manager is **Bun**.
 
 - **Framework**: TanStack Start with file-based routing (`src/routes/`)
 - **Styling**: Tailwind CSS v4 + shadcn/ui components (base-nova style)
+- **Data**: The site publishes GTFS and GTFS-Realtime feeds at `/gtfs` and `/gtfs-rt/*`, and the frontend consumes its own feeds rather than the raw tracker JSON
 - **Map**: MapLibre GL JS via react-map-gl, with a Stadia Maps hosted style (`alidade_smooth_dark`) as the basemap. Production auth is domain-based (configured in the Stadia dashboard); localhost needs no API key
 - **Validation**: Zod for data schemas
 - **Route tree**: Auto-generated at `src/routeTree.gen.ts` — do not edit manually
@@ -41,7 +42,10 @@ Package manager is **Bun**.
 - `src/hooks/` — Custom React hooks (e.g., `use-mobile.ts`)
 - `src/server/` — Server-side logic: train data fetching, transformation, and Zod schemas
 - `src/lib/utils.ts` — `cn()` helper (clsx + tailwind-merge)
-- `src/data/viarail/` — Static JSON data for train routes (Canadian, Corridor, Ocean, etc.). Route files are bundled into a single hashed chunk via `src/data/route-geometry.ts` — when adding a new route JSON here, also import it in `route-geometry.ts` or it won't appear on the map
+- `data/gtfs/viarail.zip` — VIA's published GTFS schedule feed, committed as the source of truth. `scripts/build-gtfs.ts` (`bun run gtfs:build`) turns it into typed tables in `src/data/gtfs/` and a redistributable copy plus deduplicated route geometry in `public/gtfs/`. Both output directories are generated and committed; edit the script, never the output. CI fails if they drift
+- `src/data/gtfs.ts` — typed barrel over the generated tables, with lookup maps (`stopByCode` joins the live tracker's station codes to GTFS stops)
+- `src/server/gtfs-rt/` — converts the live tracker JSON into GTFS-Realtime. `resolve-trip.ts` maps a train number to a scheduled trip, `align-stops.ts` matches the tracker's stop list onto that trip, `build-feed.ts` produces the three FeedMessages, `serve.ts` encodes them for `/gtfs-rt/$feed`
+- `src/lib/view-model.ts` — turns the feeds plus the schedule into what the UI renders
 
 ### shadcn/ui
 

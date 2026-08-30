@@ -61,9 +61,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <p>Data source:</p>
             <ul className="ml-4 list-disc">
               <li>VIA Rail Canada (live train data)</li>
-              <li>RailFansMap (route data)</li>
+              <li>VIA Rail Canada (GTFS schedule)</li>
             </ul>
           </div>
+          <p>
+            Rebuilt as{" "}
+            <a href="/gtfs" className="underline hover:text-foreground">
+              GTFS feeds
+            </a>{" "}
+            you can use elsewhere.
+          </p>
           <p>
             The project is not affiliated with VIA Rail Canada. Check out{" "}
             <a

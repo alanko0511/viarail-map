@@ -1,34 +1,18 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import {
+  HeadContent,
+  Outlet,
+  Scripts,
+  createRootRoute,
+  useRouter,
+} from "@tanstack/react-router"
 import { configure } from "onedollarstats"
 import { useEffect } from "react"
 
-import { AppSidebar } from "@/components/app-sidebar"
-import { TrainMap } from "@/components/map"
-import { MobileTrainBar } from "@/components/mobile-train-bar"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { useActiveTrainId } from "@/hooks/use-active-train-id"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { getTrainData } from "@/server/trains"
 
 import appCss from "../styles.css?url"
 
 export const Route = createRootRoute({
-  loader: async () => {
-    try {
-      return {
-        trainData: await getTrainData({
-          data: { timeZone: "America/Toronto" },
-        }),
-      }
-    } catch {
-      return { trainData: {} as Record<string, never> }
-    }
-  },
   head: () => ({
     meta: [
       {
@@ -58,30 +42,30 @@ export const Route = createRootRoute({
   component: RootLayout,
 })
 
+const REFRESH_INTERVAL_MS = 15_000
+
 function RootLayout() {
+  const router = useRouter()
+
   useEffect(() => {
     configure({
       trackLocalhostAs: "viarail-map.alanko.dev",
     })
   }, [])
 
-  const isMobile = useIsMobile()
-  const activeTrainId = useActiveTrainId()
+  // Upstream refreshes every 15s, so polling faster only wastes requests.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        router.invalidate()
+      }
+    }, REFRESH_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [router])
 
   return (
     <TooltipProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset className="overflow-hidden">
-          <div className="relative flex h-full flex-1 flex-col">
-            <SidebarTrigger className="absolute top-2 left-2 z-10 max-md:hidden" />
-            {isMobile && <MobileTrainBar trainId={activeTrainId} />}
-            <div className="flex-1">
-              <TrainMap activeTrainId={activeTrainId} />
-            </div>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+      <Outlet />
     </TooltipProvider>
   )
 }

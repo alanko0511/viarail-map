@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute("/train/$trainId")({
+export const Route = createFileRoute("/_map/train/$trainId")({
   component: () => null,
 })

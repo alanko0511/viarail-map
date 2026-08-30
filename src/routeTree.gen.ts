@@ -9,68 +9,133 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as TrainTrainIdRouteImport } from './routes/train/$trainId'
+import { Route as GtfsRouteImport } from './routes/gtfs'
+import { Route as MapRouteImport } from './routes/_map'
+import { Route as MapIndexRouteImport } from './routes/_map/index'
+import { Route as GtfsRtFeedRouteImport } from './routes/gtfs-rt/$feed'
+import { Route as MapTrainTrainIdRouteImport } from './routes/_map/train/$trainId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const GtfsRoute = GtfsRouteImport.update({
+  id: '/gtfs',
+  path: '/gtfs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TrainTrainIdRoute = TrainTrainIdRouteImport.update({
+const MapRoute = MapRouteImport.update({
+  id: '/_map',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapIndexRoute = MapIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MapRoute,
+} as any)
+const GtfsRtFeedRoute = GtfsRtFeedRouteImport.update({
+  id: '/gtfs-rt/$feed',
+  path: '/gtfs-rt/$feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapTrainTrainIdRoute = MapTrainTrainIdRouteImport.update({
   id: '/train/$trainId',
   path: '/train/$trainId',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => MapRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/train/$trainId': typeof TrainTrainIdRoute
+  '/': typeof MapIndexRoute
+  '/gtfs': typeof GtfsRoute
+  '/gtfs-rt/$feed': typeof GtfsRtFeedRoute
+  '/train/$trainId': typeof MapTrainTrainIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/train/$trainId': typeof TrainTrainIdRoute
+  '/gtfs': typeof GtfsRoute
+  '/gtfs-rt/$feed': typeof GtfsRtFeedRoute
+  '/': typeof MapIndexRoute
+  '/train/$trainId': typeof MapTrainTrainIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/train/$trainId': typeof TrainTrainIdRoute
+  '/_map': typeof MapRouteWithChildren
+  '/gtfs': typeof GtfsRoute
+  '/gtfs-rt/$feed': typeof GtfsRtFeedRoute
+  '/_map/': typeof MapIndexRoute
+  '/_map/train/$trainId': typeof MapTrainTrainIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/train/$trainId'
+  fullPaths: '/' | '/gtfs' | '/gtfs-rt/$feed' | '/train/$trainId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/train/$trainId'
-  id: '__root__' | '/' | '/train/$trainId'
+  to: '/gtfs' | '/gtfs-rt/$feed' | '/' | '/train/$trainId'
+  id:
+    | '__root__'
+    | '/_map'
+    | '/gtfs'
+    | '/gtfs-rt/$feed'
+    | '/_map/'
+    | '/_map/train/$trainId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  TrainTrainIdRoute: typeof TrainTrainIdRoute
+  MapRoute: typeof MapRouteWithChildren
+  GtfsRoute: typeof GtfsRoute
+  GtfsRtFeedRoute: typeof GtfsRtFeedRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/gtfs': {
+      id: '/gtfs'
+      path: '/gtfs'
+      fullPath: '/gtfs'
+      preLoaderRoute: typeof GtfsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/train/$trainId': {
-      id: '/train/$trainId'
+    '/_map': {
+      id: '/_map'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof MapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_map/': {
+      id: '/_map/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof MapIndexRouteImport
+      parentRoute: typeof MapRoute
+    }
+    '/gtfs-rt/$feed': {
+      id: '/gtfs-rt/$feed'
+      path: '/gtfs-rt/$feed'
+      fullPath: '/gtfs-rt/$feed'
+      preLoaderRoute: typeof GtfsRtFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_map/train/$trainId': {
+      id: '/_map/train/$trainId'
       path: '/train/$trainId'
       fullPath: '/train/$trainId'
-      preLoaderRoute: typeof TrainTrainIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof MapTrainTrainIdRouteImport
+      parentRoute: typeof MapRoute
     }
   }
 }
 
+interface MapRouteChildren {
+  MapIndexRoute: typeof MapIndexRoute
+  MapTrainTrainIdRoute: typeof MapTrainTrainIdRoute
+}
+
+const MapRouteChildren: MapRouteChildren = {
+  MapIndexRoute: MapIndexRoute,
+  MapTrainTrainIdRoute: MapTrainTrainIdRoute,
+}
+
+const MapRouteWithChildren = MapRoute._addFileChildren(MapRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  TrainTrainIdRoute: TrainTrainIdRoute,
+  MapRoute: MapRouteWithChildren,
+  GtfsRoute: GtfsRoute,
+  GtfsRtFeedRoute: GtfsRtFeedRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
