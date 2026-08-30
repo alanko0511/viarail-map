@@ -1,8 +1,14 @@
 import { Link } from "@tanstack/react-router"
+import { ChevronDownIcon } from "lucide-react"
 import * as React from "react"
 
 import { TrainSearchCombobox } from "@/components/train-search-combobox"
 import { TrainTimeline } from "@/components/train-timeline"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   Sidebar,
   SidebarContent,
@@ -46,31 +52,53 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarFooter>
         <div className="space-y-2 px-2 py-2 text-xs text-muted-foreground">
-          <p>
-            GitHub:{" "}
-            <a
-              href="https://github.com/alanko0511/viarail-map"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-foreground"
-            >
-              alanko0511/viarail-map
-            </a>
-          </p>
-          <div>
-            <p>Data source:</p>
-            <ul className="ml-4 list-disc">
-              <li>VIA Rail Canada (live train data)</li>
-              <li>VIA Rail Canada (GTFS schedule)</li>
-            </ul>
-          </div>
-          <p>
-            Rebuilt as{" "}
-            <a href="/gtfs" className="underline hover:text-foreground">
-              GTFS feeds
-            </a>{" "}
-            you can use elsewhere.
-          </p>
+          <Collapsible className="space-y-2">
+            <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 rounded-md py-1 text-left hover:text-foreground">
+              <span>About this map</span>
+              <ChevronDownIcon className="size-3.5 shrink-0 transition-transform group-data-[panel-open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2">
+              <p>
+                GitHub:{" "}
+                <a
+                  href="https://github.com/alanko0511/viarail-map"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground"
+                >
+                  alanko0511/viarail-map
+                </a>
+              </p>
+              <div>
+                <p>Data source:</p>
+                <ul className="ml-4 list-disc">
+                  <li>VIA Rail Canada (live train data)</li>
+                  <li>VIA Rail Canada (GTFS schedule)</li>
+                </ul>
+              </div>
+              <p>
+                Rebuilt as{" "}
+                <a href="/gtfs" className="underline hover:text-foreground">
+                  GTFS feeds
+                </a>{" "}
+                you can use elsewhere.
+              </p>
+              <p>
+                The project is not affiliated with VIA Rail Canada. Check out{" "}
+                <a
+                  href="https://www.viarail.ca"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground"
+                >
+                  viarail.ca
+                </a>{" "}
+                for the latest news and information about your journey.
+              </p>
+            </CollapsibleContent>
+          </Collapsible>
+          {/* The Open Government Licence requires this statement wherever the
+              data is served, so it stays outside the collapsible. */}
           <p>
             Contains information licensed under the{" "}
             <a
@@ -82,18 +110,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               Open Government Licence – Canada
             </a>
             .
-          </p>
-          <p>
-            The project is not affiliated with VIA Rail Canada. Check out{" "}
-            <a
-              href="https://www.viarail.ca"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-foreground"
-            >
-              viarail.ca
-            </a>{" "}
-            for the latest news and information about your journey.
           </p>
         </div>
       </SidebarFooter>
