@@ -74,6 +74,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <ul className="ml-4 list-disc">
                   <li>VIA Rail Canada (live train data)</li>
                   <li>VIA Rail Canada (GTFS schedule)</li>
+                  <li>
+                    <a
+                      href="https://traincar.info"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-foreground"
+                    >
+                      traincar.info
+                    </a>{" "}
+                    (train consist)
+                  </li>
                 </ul>
               </div>
               <p>

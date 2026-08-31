@@ -36,6 +36,35 @@ function fail(message: string): never {
 
 const zipBytes = readFileSync(ZIP_PATH)
 const sourceSha256 = createHash("sha256").update(zipBytes).digest("hex")
+
+/**
+ * The date this feed was retrieved, in YYYY-MM-DD.
+ *
+ * Reuses the committed value while the zip's hash is unchanged, so rebuilding
+ * unchanged data is reproducible. A new zip means a new hash, and today is when
+ * it arrived. `/gtfs` shows this as "Retrieved" and CI fails once it falls too
+ * far behind, so it has to track the data rather than the clock. Read here,
+ * before the output directories are wiped further down.
+ */
+const retrievedAt = (() => {
+  const today = new Date().toISOString().slice(0, 10)
+  try {
+    const previous = JSON.parse(
+      readFileSync(join(DATA_OUT, "feed-info.json"), "utf8")
+    ) as { builtAt?: string; sourceSha256?: string }
+    if (previous.sourceSha256 !== sourceSha256) return today
+
+    // A date in the future would be carried forward for as long as the zip
+    // stayed the same, and the freshness check reads it as negative age and
+    // never fires. Only a real past date survives.
+    const carried = previous.builtAt
+    if (!carried || !/^\d{4}-\d{2}-\d{2}$/.test(carried)) return today
+    if (Number.isNaN(Date.parse(`${carried}T00:00:00Z`))) return today
+    return carried > today ? today : carried
+  } catch {
+    return today
+  }
+})()
 const entries = unzipSync(new Uint8Array(zipBytes))
 const decoder = new TextDecoder()
 
@@ -262,13 +291,17 @@ json("trips.json", trips)
 json("stop-times.json", stopTimes)
 json("calendar.json", { services: calendar, exceptions: calendarDates })
 json("trip-index.json", tripIndex)
+// `builtAt` is when this zip was retrieved, not when the script last ran, so it
+// survives a rebuild of an unchanged feed. Stamping the clock every run made
+// the output differ from the committed copy on any day after the last refresh,
+// which failed CI's drift check without the data having changed at all.
 json("feed-info.json", {
   publisher: feedInfo.feed_publisher_name,
   url: feedInfo.feed_publisher_url,
   lang: feedInfo.feed_lang,
   start: feedInfo.feed_start_date,
   end: feedInfo.feed_end_date,
-  builtAt: new Date().toISOString().slice(0, 10),
+  builtAt: retrievedAt,
   sourceSha256,
 })
 
