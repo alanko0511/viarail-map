@@ -57,5 +57,10 @@ Live train data comes from VIA Rail's public tracker at
 [tsimobile.viarail.ca](https://tsimobile.viarail.ca/). The schedule comes from
 [VIA Rail Canada](https://www.viarail.ca/en/developer-resources).
 
+Car counts and equipment types come from [traincar.info](https://traincar.info),
+an unofficial community service that reads VIA's reservation system. Neither
+GTFS nor the tracker says anything about consists. It is looked up per train and
+cached, and the sidebar simply leaves the badge out when there is no answer.
+
 Contains information licensed under the
 [Open Government Licence – Canada](https://open.canada.ca/en/open-government-licence-canada).
