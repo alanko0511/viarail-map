@@ -40,6 +40,16 @@ if (Number.isNaN(ageDays)) {
   process.exit(1)
 }
 
+// A future date would make the feed look perpetually fresh, which is the one
+// thing this check exists to prevent.
+if (ageDays < 0) {
+  console.error(
+    `\n  feed-info.json claims the feed was retrieved ${builtAt}, which is in the future.\n` +
+      `  Fix the date or rerun: bun run gtfs:build\n`
+  )
+  process.exit(1)
+}
+
 if (ageDays > MAX_AGE_DAYS) {
   console.error(
     `\n  The GTFS feed was retrieved ${builtAt}, ${ageDays} days ago (limit ${MAX_AGE_DAYS}).\n` +

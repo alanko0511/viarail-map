@@ -52,9 +52,15 @@ const retrievedAt = (() => {
     const previous = JSON.parse(
       readFileSync(join(DATA_OUT, "feed-info.json"), "utf8")
     ) as { builtAt?: string; sourceSha256?: string }
-    return previous.sourceSha256 === sourceSha256 && previous.builtAt
-      ? previous.builtAt
-      : today
+    if (previous.sourceSha256 !== sourceSha256) return today
+
+    // A date in the future would be carried forward for as long as the zip
+    // stayed the same, and the freshness check reads it as negative age and
+    // never fires. Only a real past date survives.
+    const carried = previous.builtAt
+    if (!carried || !/^\d{4}-\d{2}-\d{2}$/.test(carried)) return today
+    if (Number.isNaN(Date.parse(`${carried}T00:00:00Z`))) return today
+    return carried > today ? today : carried
   } catch {
     return today
   }
