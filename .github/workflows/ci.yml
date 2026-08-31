@@ -28,6 +28,8 @@ jobs:
       - run: bun --bun run typecheck
       - name: GTFS artifacts are up to date
         run: bun run gtfs:build && git diff --exit-code src/data/gtfs public/gtfs
+      - name: GTFS feed is not stale
+        run: bun run gtfs:check-freshness
       - run: bun run test
       - run: bun --bun run build
 
