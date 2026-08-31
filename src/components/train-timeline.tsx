@@ -168,11 +168,16 @@ export function TrainTimeline({ trainId }: { trainId: string }) {
 
   return (
     <SidebarGroup>
+      {/* The label truncates and the badge keeps its intrinsic width, so a long
+          headsign (Prince Rupert, Vancouver) cannot push the badge out of the
+          sidebar and make it unreachable. */}
       <div className="flex items-center justify-between gap-2 pr-2">
-        <SidebarGroupLabel>
+        <SidebarGroupLabel className="min-w-0 flex-1 truncate">
           Train {train.number} → {train.headsign}
         </SidebarGroupLabel>
-        <TrainConsist train={train} />
+        <div className="shrink-0">
+          <TrainConsist train={train} />
+        </div>
       </div>
       {train.routeLongName && (
         <div className="px-2 text-xs text-muted-foreground">
