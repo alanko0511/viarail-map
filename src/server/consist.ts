@@ -62,13 +62,13 @@ export async function fetchConsist(
     }
   }
 
-  const value = await requestConsist(url, query.number)
+  const result = await requestConsist(url, query.number)
 
-  if (cache) {
+  if (cache && result.cacheable) {
     try {
       await cache.put(
         url,
-        new Response(JSON.stringify(value), {
+        new Response(JSON.stringify(result.value), {
           headers: {
             "content-type": "application/json",
             "cache-control": `public, max-age=${CACHE_TTL_SECONDS}`,
@@ -80,13 +80,26 @@ export async function fetchConsist(
     }
   }
 
-  return value
+  return result.value
+}
+
+export interface ConsistResult {
+  value: ConsistResponse | null
+  /**
+   * Whether upstream actually answered the question.
+   *
+   * True for a consist and for upstream saying it has none, both of which hold
+   * for the TTL. False for timeouts, HTTP errors and payloads we cannot read:
+   * those say nothing about the train, and caching them would blank the badge
+   * for half an hour over a blip that lasted seconds.
+   */
+  cacheable: boolean
 }
 
 async function requestConsist(
   url: string,
   number: string
-): Promise<ConsistResponse | null> {
+): Promise<ConsistResult> {
   try {
     const response = await fetch(url, {
       headers: {
@@ -100,29 +113,27 @@ async function requestConsist(
       console.warn(
         `traincar.info error for train ${number}: ${response.status} ${response.statusText}`
       )
-      return null
+      return { value: null, cacheable: false }
     }
 
     const data = await response.json()
     return parseConsist(data, number)
   } catch (error) {
     console.warn(`traincar.info request failed for train ${number}:`, error)
-    return null
+    return { value: null, cacheable: false }
   }
 }
 
 /**
  * Upstream reports both missing parameters and unbookable services with a 200
  * and an error body: `{"errors": ["Missing train number"]}` for the former,
- * `{"error": {"code": 7002, "message": "..."}}` for the latter. Neither is a
- * consist, so both fall through to null the same way a shape change would.
+ * `{"error": {"code": 7002, "message": "..."}}` for the latter. Those are
+ * answers, so they cache as null. A payload matching neither shape means the
+ * API changed under us, which caching would only prolong.
  */
-export function parseConsist(
-  data: unknown,
-  number: string
-): ConsistResponse | null {
+export function parseConsist(data: unknown, number: string): ConsistResult {
   const result = ConsistResponseSchema.safeParse(data)
-  if (result.success) return result.data
+  if (result.success) return { value: result.data, cacheable: true }
 
   if (typeof data === "object" && data !== null) {
     const body = data as { error?: unknown; errors?: unknown }
@@ -131,7 +142,7 @@ export function parseConsist(
         `traincar.info has no consist for train ${number}:`,
         JSON.stringify(body.error ?? body.errors)
       )
-      return null
+      return { value: null, cacheable: true }
     }
   }
 
@@ -139,7 +150,7 @@ export function parseConsist(
     `Unparseable traincar.info payload for train ${number}:`,
     result.error.message
   )
-  return null
+  return { value: null, cacheable: false }
 }
 
 /**
