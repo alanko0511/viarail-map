@@ -135,7 +135,10 @@ function TimelineStop({
             timeZone={stop.timezone}
             delayMinutes={stop.delayMinutes}
           />
-          {stop.showDwell && (
+          {/* The origin has no arrival row, so its departure is the only time
+              there is to show; elsewhere a departure is only worth a line when
+              the train actually dwells. */}
+          {(stop.showDwell || !stop.arrival) && (
             <TimeRow
               label="Departure"
               time={stop.departure}

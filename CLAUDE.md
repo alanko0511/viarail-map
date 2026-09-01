@@ -18,6 +18,7 @@ bun --bun run format    # Prettier (with tailwindcss plugin)
 bun --bun run typecheck # tsc --noEmit
 bun --bun run deploy    # Typecheck, build, and deploy to Cloudflare Workers
 bun --bun run cf-typegen # Generate Cloudflare Worker types
+bun run fixture:capture  # Snapshot VIA's live tracker into a test fixture (args in README)
 ```
 
 Package manager is **Bun**.
@@ -46,6 +47,19 @@ Package manager is **Bun**.
 - `src/data/gtfs.ts` — typed barrel over the generated tables, with lookup maps (`stopByCode` joins the live tracker's station codes to GTFS stops)
 - `src/server/gtfs-rt/` — converts the live tracker JSON into GTFS-Realtime. `resolve-trip.ts` maps a train number to a scheduled trip, `align-stops.ts` matches the tracker's stop list onto that trip, `build-feed.ts` produces the three FeedMessages, `serve.ts` encodes them for `/gtfs-rt/$feed`
 - `src/lib/view-model.ts` — turns the feeds plus the schedule into what the UI renders
+
+### Tests
+
+Nothing in the suite touches VIA or traincar.info. Tests replay committed
+captures of the tracker from `src/server/__tests__/fixtures/` through the real
+pipeline (`parseAllTrainData` → `buildFeeds` → `toTrainViews`) with a `now`
+pinned to the capture's poll time, which is what makes stop statuses
+deterministic.
+
+Component tests are `src/components/__tests__/*.test.tsx` and need a
+`@vitest-environment jsdom` docblock, since the default environment is node.
+They mock the two I/O seams only, `use-train-views` and `use-train-consist`, so
+that everything below the component is the real thing.
 
 ### shadcn/ui
 

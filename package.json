@@ -14,7 +14,8 @@
     "deploy": "bun run typecheck && bun run build && wrangler deploy",
     "cf-typegen": "wrangler types",
     "gtfs:build": "bun scripts/build-gtfs.ts",
-    "gtfs:check-freshness": "bun scripts/check-feed-freshness.ts"
+    "gtfs:check-freshness": "bun scripts/check-feed-freshness.ts",
+    "fixture:capture": "bun scripts/capture-fixture.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

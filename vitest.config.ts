@@ -12,7 +12,9 @@ export default defineConfig({
     ],
   },
   test: {
+    // Node by default: every pipeline test is pure logic and pays nothing for
+    // a DOM. Component tests opt into jsdom with a per-file docblock.
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
 })
