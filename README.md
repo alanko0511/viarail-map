@@ -41,12 +41,36 @@ bun run test
 bun --bun run lint
 bun --bun run typecheck
 bun run gtfs:build       # regenerate the tables under src/data/gtfs and public/gtfs
+bun run fixture:capture  # snapshot VIA's live tracker as a test fixture
 ```
 
 The schedule lives at `data/gtfs/viarail.zip` and is the source of truth.
 `gtfs:build` turns it into the typed tables the app imports and the copy served
 under `/gtfs`. Both output directories are committed, and CI fails if they no
 longer match the zip.
+
+Tests run against committed snapshots of VIA's tracker rather than the live API,
+and `fixture:capture` is how a snapshot gets taken:
+
+```bash
+bun run fixture:capture                 # every running train, as all-train-data-<today>.json
+bun run fixture:capture rush-hour       # every running train, under another name
+bun run fixture:capture odd 5 97 669    # only those trains
+bun run fixture:capture --list          # what is running, writing nothing
+```
+
+Files land in `src/server/__tests__/fixtures/`. Capturing everything is the
+default because a train's oddities are not obvious in advance, and the broad
+fixtures have consistently turned out to contain the shapes a hand-picked
+capture would have gone looking for. `--list` tags the trains worth a look: a
+stop list VIA truncated mid-route, a stop the tracker predicts nothing for, a
+pause long enough to print as two rows, a run crossing several timezones.
+
+A capture cannot be repeated. The trains arrive and drop out of the feed, so the
+file is the only copy of that moment. When the script finishes it prints the
+feed's poll timestamp, which is the instant a test should pin as its `now`;
+choose a different one and the trains sit in the wrong places on their own
+timelines.
 
 Built with TanStack Start, MapLibre GL, and Tailwind CSS. Deployed to Cloudflare
 Workers, with a Stadia Maps hosted style for the basemap.
