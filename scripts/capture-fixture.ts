@@ -29,11 +29,14 @@
  */
 import { writeFileSync } from "node:fs"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import type { Train } from "../src/server/schemas/train"
 import { fetchAllTrainData } from "../src/server/trains"
 
-const ROOT = join(new URL("..", import.meta.url).pathname)
+// fileURLToPath, not URL.pathname: a checkout under a directory with a space
+// keeps the %20 in a pathname and every write below would miss.
+const ROOT = fileURLToPath(new URL("..", import.meta.url))
 const FIXTURES = join(ROOT, "src/server/__tests__/fixtures")
 
 const args = process.argv.slice(2)
@@ -138,7 +141,20 @@ const path = join(FIXTURES, `${name}-${today}.json`)
 
 // Compact, like the fixtures already here: nobody reads these by eye, and the
 // pretty-printed form is four times the size in the diff.
-writeFileSync(path, JSON.stringify(picked), "utf8")
+//
+// "wx" refuses to clobber. Two captures on one day land on the same filename,
+// and the payload the first one holds is gone from the feed by then, so an
+// overwrite would destroy the only copy.
+try {
+  writeFileSync(path, JSON.stringify(picked), { encoding: "utf8", flag: "wx" })
+} catch (error) {
+  if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error
+  console.error(
+    `\n  ${path} already exists.\n` +
+      "  Capture under another name, or delete that file if you mean to replace it.\n"
+  )
+  process.exit(1)
+}
 
 // Every train carries the instant it was last polled, and they poll
 // independently, so a capture spans a minute or two rather than one instant.
