@@ -35,11 +35,11 @@ have the choice.
 
 ```bash
 bun install
-bun --bun run dev        # http://localhost:3000
-bun --bun run build
+bun run dev              # http://localhost:3000
+bun run build
 bun run test
-bun --bun run lint
-bun --bun run typecheck
+bun run lint
+bun run typecheck
 bun run gtfs:build       # regenerate the tables under src/data/gtfs and public/gtfs
 bun run fixture:capture  # snapshot VIA's live tracker as a test fixture
 ```
