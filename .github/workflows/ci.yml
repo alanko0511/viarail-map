@@ -23,15 +23,15 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - run: bun --bun run lint
-      - run: bun --bun run format:check
-      - run: bun --bun run typecheck
+      - run: bun run lint
+      - run: bun run format:check
+      - run: bun run typecheck
       - name: GTFS artifacts are up to date
         run: bun run gtfs:build && git diff --exit-code src/data/gtfs public/gtfs
       - name: GTFS feed is not stale
         run: bun run gtfs:check-freshness
       - run: bun run test
-      - run: bun --bun run build
+      - run: bun run build
 
   deploy:
     name: deploy
@@ -46,7 +46,7 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - run: bun --bun run build
+      - run: bun run build
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
