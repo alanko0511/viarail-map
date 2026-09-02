@@ -9,19 +9,22 @@ Interactive map visualization of VIA Rail Canada's train routes. Built with TanS
 ## Commands
 
 ```bash
-bun --bun run dev       # Dev server on port 3000
-bun --bun run build     # Production build
-bun --bun run preview   # Preview production build
-bun --bun run test      # Run Vitest tests
-bun --bun run lint      # ESLint (TanStack config)
-bun --bun run format    # Prettier (with tailwindcss plugin)
-bun --bun run typecheck # tsc --noEmit
-bun --bun run deploy    # Typecheck, build, and deploy to Cloudflare Workers
-bun --bun run cf-typegen # Generate Cloudflare Worker types
-bun run fixture:capture  # Snapshot VIA's live tracker into a test fixture (args in README)
+bun run dev             # Dev server on port 3000
+bun run build           # Production build
+bun run preview         # Preview production build
+bun run test            # Run Vitest tests
+bun run lint            # oxlint
+bun run format          # oxfmt
+bun run typecheck       # tsc --noEmit
+bun run deploy          # Typecheck, build, and deploy to Cloudflare Workers
+bun run cf-typegen      # Generate Cloudflare Worker types
+bun run gtfs:build      # Rebuild generated GTFS tables from data/gtfs/viarail.zip
+bun run fixture:capture # Snapshot VIA's live tracker into a test fixture (args in README)
 ```
 
 Package manager is **Bun**.
+
+**Never add `--bun` to any `package.json` script command** (e.g. `"test": "bun --bun vitest run"`), and don't invoke scripts with `bun --bun run ...` either. Under `--bun`, vitest hangs and `wrangler deploy` dies silently. Plain `bun run <script>` is always correct here.
 
 ## Architecture
 
