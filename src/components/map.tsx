@@ -141,17 +141,21 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
       .catch(() => setRouteData(null))
   }, [])
 
-  // When activeTrainId changes, fly to the train and enable follow
+  // When activeTrainId changes, fly to the train and enable follow. On a deep
+  // link the map is not mounted yet when this first runs (and the train may
+  // have no position yet), so the train is only marked as handled once the
+  // fly-to actually happened; until then every re-run retries.
   useEffect(() => {
     if (!activeTrainId || activeTrainId === prevTrainIdRef.current) return
-    prevTrainIdRef.current = activeTrainId
+    if (!mapLoaded) return
 
     const position = trains.get(activeTrainId)?.position
     if (!position) return
 
+    prevTrainIdRef.current = activeTrainId
     mapRef.current?.flyTo({ center: [position.lng, position.lat], zoom: 8 })
     setFollowing(true)
-  }, [activeTrainId, trains])
+  }, [activeTrainId, trains, mapLoaded])
 
   // When following and train data updates, keep centering on the train
   useEffect(() => {

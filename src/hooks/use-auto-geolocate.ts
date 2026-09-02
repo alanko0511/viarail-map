@@ -44,11 +44,13 @@ export function useAutoGeolocate({
     navigator.permissions
       .query({ name: "geolocation" })
       .then((status) => {
-        if (cancelled || status.state !== "granted") return
+        if (cancelled || skipRef.current || status.state !== "granted") return
         // Permission already granted, so this never prompts
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            if (cancelled) return
+            // A train may have been selected while the lookup was in flight;
+            // its fly-to owns the view now.
+            if (cancelled || skipRef.current) return
             const { latitude, longitude } = position.coords
             if (isWithinCanada(latitude, longitude)) {
               geolocateControlRef.current?.trigger()
