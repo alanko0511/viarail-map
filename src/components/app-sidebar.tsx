@@ -19,9 +19,11 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useActiveTrainId } from "@/hooks/use-active-train-id"
+import { useLastTrainId } from "@/hooks/use-last-train-id"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const activeTrainId = useActiveTrainId()
+  const lastTrainId = useLastTrainId(activeTrainId)
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -44,8 +46,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {activeTrainId ? (
           <TrainTimeline trainId={activeTrainId} />
         ) : (
-          <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-muted-foreground">
-            Search or click on a train to see details
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
+            <p>Search or click on a train to see details</p>
+            {lastTrainId && (
+              <p>
+                Last time you were looking at{" "}
+                <Link
+                  to="/train/$trainId"
+                  params={{ trainId: lastTrainId }}
+                  className="underline hover:text-foreground"
+                >
+                  train {lastTrainId}
+                </Link>
+              </p>
+            )}
           </div>
         )}
       </SidebarContent>
