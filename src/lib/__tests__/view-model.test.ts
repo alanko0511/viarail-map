@@ -9,8 +9,8 @@ import edgeFixture from "../../server/__tests__/fixtures/edge-cases.json"
 
 const NOW = new Date("2026-08-30T15:17:32Z")
 
-function views(input: unknown) {
-  const feeds = buildFeeds(input as AllTrainData, NOW)
+function views(input: unknown, now: Date = NOW) {
+  const feeds = buildFeeds(input as AllTrainData, now)
   return toTrainViews({
     tripUpdates: toCanonicalJson(feeds.tripUpdates),
     vehiclePositions: toCanonicalJson(feeds.vehiclePositions),
@@ -137,5 +137,44 @@ describe("toTrainViews", () => {
     expect(view.alerts.map((alert) => alert.header)).toContain(
       "Oshawa: service replaced"
     )
+  })
+
+  it("does not read a prediction for a future stop as a visit", () => {
+    // Train 45 has called at Ottawa and Fallowfield; the tracker still gives
+    // Kingston and Toronto an estimate and a delay, which is a forecast, not an
+    // arrival. The vehicle feed places the train, and that is what decides.
+    const view = views(trains).find((train) => train.key === "45")!
+
+    expect(view.stops.map((stop) => `${stop.code}:${stop.status}`)).toEqual([
+      "OTTW:left",
+      "FALL:arrived",
+      "KGON:coming",
+      "TRTO:coming",
+    ])
+  })
+
+  it("leaves a train standing at the last stop it has reached", () => {
+    // Train 70 has arrived at Toronto, the end of its list. There is no next
+    // stop to be in transit to, so the terminus reads as arrived rather than
+    // dropping the train's place on the line entirely.
+    const view = views(trains).find((train) => train.key === "70")!
+
+    expect(view.stops.at(-1)).toMatchObject({ code: "TRTO", status: "arrived" })
+    expect(view.stops.at(-2)!.status).toBe("left")
+  })
+
+  it("counts a train standing at a stop as having reached it", () => {
+    // Train 692 has no GPS, so its place comes from the estimates alone. At
+    // 13:00 local it is an hour into a 96-minute stand at Thompson: the arrival
+    // is behind it and the departure is not. Reading the departure first would
+    // put the train short of a station it is sitting in.
+    const view = views(trains, new Date("2026-08-30T18:00:00Z")).find(
+      (train) => train.key === "692"
+    )!
+    const thompson = view.stops.findIndex((stop) => stop.code === "THOM")
+
+    expect(view.stops[thompson].status).toBe("arrived")
+    expect(view.stops[thompson - 1].status).toBe("left")
+    expect(view.stops[thompson + 1].status).toBe("coming")
   })
 })

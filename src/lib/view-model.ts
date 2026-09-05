@@ -74,6 +74,7 @@ function serviceTime(startDate: string, seconds: number): Date {
 }
 
 interface CanonicalFeed {
+  header?: { timestamp?: string | number }
   entity?: Array<Record<string, any>>
 }
 
@@ -153,7 +154,76 @@ function toStopView(
   }
 }
 
+interface PlacedStop {
+  update: Record<string, any>
+  row: GtfsStopTime
+}
+
+/**
+ * Index of the last stop the train has called at.
+ *
+ * The vehicle feed carries the answer: `currentStopSequence` is the stop the
+ * train is standing at or running towards, and `currentStatus` says which. A
+ * published prediction is no evidence of a visit, because upstream estimates
+ * every stop still to come.
+ */
+function fromVehicle(
+  placed: Array<PlacedStop>,
+  vehicle: Record<string, any> | undefined
+): number | null {
+  const sequence = vehicle?.currentStopSequence
+  if (typeof sequence !== "number") return null
+
+  const index = placed.findIndex(
+    ({ update }) => update.stopSequence === sequence
+  )
+  if (index === -1) return null
+
+  return vehicle?.currentStatus === "STOPPED_AT" ? index : index - 1
+}
+
+function estimate(
+  event: Record<string, any> | undefined,
+  seconds: number | null,
+  startDate: string
+): Date | null {
+  if (!event || seconds == null) return null
+  return predicted(serviceTime(startDate, seconds), event).predicted
+}
+
+/**
+ * Fallback for a train the vehicle feed does not place: a stop whose own
+ * estimate has passed has been called at. Weaker than the vehicle feed, since a
+ * stale estimate ages into the past on its own, but far better than reading
+ * every prediction as a visit.
+ *
+ * Arrival decides where it exists. A train part way through a half-hour stand
+ * at Winnipeg has called there, however far off its departure still is.
+ */
+function fromPredictions(
+  placed: Array<PlacedStop>,
+  startDate: string,
+  now: number | null
+): number {
+  if (now == null) return -1
+
+  let last = -1
+  placed.forEach(({ update, row }, index) => {
+    const at =
+      estimate(update.arrival, row[2], startDate) ??
+      estimate(update.departure, row[3], startDate)
+    if (at && at.getTime() <= now) last = index
+  })
+  return last
+}
+
+function feedNow(feed: CanonicalFeed): number | null {
+  const timestamp = feed.header?.timestamp
+  return timestamp == null ? null : Number(timestamp) * 1000
+}
+
 export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
+  const now = feedNow(feeds.tripUpdates)
   const positions = new Map<string, Record<string, any>>()
   for (const entity of feeds.vehiclePositions.entity ?? []) {
     positions.set(entity.id, entity.vehicle)
@@ -191,20 +261,19 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
     const byStopId = new Map(schedule.map((row) => [row[1], row]))
     const updates: Array<Record<string, any>> = update.stopTimeUpdate ?? []
 
-    // `eta === "ARR"` upstream becomes a published prediction here, so the last
-    // stop carrying one is the last the train has called at.
-    let lastVisited = -1
-    for (let i = updates.length - 1; i >= 0; i--) {
-      if (updates[i].arrival || updates[i].departure) {
-        lastVisited = i
-        break
-      }
-    }
-
-    const stops = updates
-      .map((stopUpdate, index) => {
+    const vehicle = positions.get(entity.id)
+    const placed: Array<PlacedStop> = updates
+      .map((stopUpdate) => {
         const row = byStopId.get(stopUpdate.stopId)
-        if (!row) return null
+        return row ? { update: stopUpdate, row } : null
+      })
+      .filter((entry) => entry !== null)
+
+    const lastVisited =
+      fromVehicle(placed, vehicle) ?? fromPredictions(placed, startDate, now)
+
+    const stops = placed
+      .map(({ update: stopUpdate, row }, index) => {
         const status: StopStatus =
           index < lastVisited
             ? "left"
@@ -222,7 +291,6 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
       })
       .filter((stop) => stop !== null)
 
-    const vehicle = positions.get(entity.id)
     const position: PositionView | null = vehicle?.position
       ? {
           lat: vehicle.position.latitude,
