@@ -182,11 +182,23 @@ function fromVehicle(
   return vehicle?.currentStatus === "STOPPED_AT" ? index : index - 1
 }
 
+function estimate(
+  event: Record<string, any> | undefined,
+  seconds: number | null,
+  startDate: string
+): Date | null {
+  if (!event || seconds == null) return null
+  return predicted(serviceTime(startDate, seconds), event).predicted
+}
+
 /**
  * Fallback for a train the vehicle feed does not place: a stop whose own
  * estimate has passed has been called at. Weaker than the vehicle feed, since a
  * stale estimate ages into the past on its own, but far better than reading
  * every prediction as a visit.
+ *
+ * Arrival decides where it exists. A train part way through a half-hour stand
+ * at Winnipeg has called there, however far off its departure still is.
  */
 function fromPredictions(
   placed: Array<PlacedStop>,
@@ -197,10 +209,9 @@ function fromPredictions(
 
   let last = -1
   placed.forEach(({ update, row }, index) => {
-    const event = update.departure ?? update.arrival
-    const seconds = row[3] ?? row[2]
-    if (!event || seconds == null) return
-    const at = predicted(serviceTime(startDate, seconds), event).predicted
+    const at =
+      estimate(update.arrival, row[2], startDate) ??
+      estimate(update.departure, row[3], startDate)
     if (at && at.getTime() <= now) last = index
   })
   return last

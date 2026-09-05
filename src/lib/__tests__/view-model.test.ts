@@ -9,8 +9,8 @@ import edgeFixture from "../../server/__tests__/fixtures/edge-cases.json"
 
 const NOW = new Date("2026-08-30T15:17:32Z")
 
-function views(input: unknown) {
-  const feeds = buildFeeds(input as AllTrainData, NOW)
+function views(input: unknown, now: Date = NOW) {
+  const feeds = buildFeeds(input as AllTrainData, now)
   return toTrainViews({
     tripUpdates: toCanonicalJson(feeds.tripUpdates),
     vehiclePositions: toCanonicalJson(feeds.vehiclePositions),
@@ -161,5 +161,20 @@ describe("toTrainViews", () => {
 
     expect(view.stops.at(-1)).toMatchObject({ code: "TRTO", status: "arrived" })
     expect(view.stops.at(-2)!.status).toBe("left")
+  })
+
+  it("counts a train standing at a stop as having reached it", () => {
+    // Train 692 has no GPS, so its place comes from the estimates alone. At
+    // 13:00 local it is an hour into a 96-minute stand at Thompson: the arrival
+    // is behind it and the departure is not. Reading the departure first would
+    // put the train short of a station it is sitting in.
+    const view = views(trains, new Date("2026-08-30T18:00:00Z")).find(
+      (train) => train.key === "692"
+    )!
+    const thompson = view.stops.findIndex((stop) => stop.code === "THOM")
+
+    expect(view.stops[thompson].status).toBe("arrived")
+    expect(view.stops[thompson - 1].status).toBe("left")
+    expect(view.stops[thompson + 1].status).toBe("coming")
   })
 })
