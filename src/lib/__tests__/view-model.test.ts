@@ -138,4 +138,28 @@ describe("toTrainViews", () => {
       "Oshawa: service replaced"
     )
   })
+
+  it("does not read a prediction for a future stop as a visit", () => {
+    // Train 45 has called at Ottawa and Fallowfield; the tracker still gives
+    // Kingston and Toronto an estimate and a delay, which is a forecast, not an
+    // arrival. The vehicle feed places the train, and that is what decides.
+    const view = views(trains).find((train) => train.key === "45")!
+
+    expect(view.stops.map((stop) => `${stop.code}:${stop.status}`)).toEqual([
+      "OTTW:left",
+      "FALL:arrived",
+      "KGON:coming",
+      "TRTO:coming",
+    ])
+  })
+
+  it("leaves a train standing at the last stop it has reached", () => {
+    // Train 70 has arrived at Toronto, the end of its list. There is no next
+    // stop to be in transit to, so the terminus reads as arrived rather than
+    // dropping the train's place on the line entirely.
+    const view = views(trains).find((train) => train.key === "70")!
+
+    expect(view.stops.at(-1)).toMatchObject({ code: "TRTO", status: "arrived" })
+    expect(view.stops.at(-2)!.status).toBe("left")
+  })
 })

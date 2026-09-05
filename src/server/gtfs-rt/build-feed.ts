@@ -76,15 +76,19 @@ function currentStop(train: Train, now: Date) {
     departure != null &&
     Date.parse(departure) > now.getTime()
 
-  const target = stopped ? stop : train.times[index + 1]
-  if (!target) return null
+  // Past the last stop there is nowhere to be in transit to, so a train that
+  // has called at the end of its list is standing there.
+  const next = stopped ? undefined : train.times[index + 1]
 
-  return {
-    code: target.code,
-    status: stopped
-      ? rt.VehiclePosition.VehicleStopStatus.STOPPED_AT
-      : rt.VehiclePosition.VehicleStopStatus.IN_TRANSIT_TO,
-  }
+  return next
+    ? {
+        code: next.code,
+        status: rt.VehiclePosition.VehicleStopStatus.IN_TRANSIT_TO,
+      }
+    : {
+        code: stop.code,
+        status: rt.VehiclePosition.VehicleStopStatus.STOPPED_AT,
+      }
 }
 
 function vehicleEntity(
