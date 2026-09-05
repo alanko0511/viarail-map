@@ -16,7 +16,7 @@ function readStoredTrainId(): string | undefined {
  */
 export function useLastTrainId(activeTrainId: string | undefined) {
   const [lastTrainId, setLastTrainId] = React.useState<string | undefined>(
-    undefined,
+    undefined
   )
 
   React.useEffect(() => {
