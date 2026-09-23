@@ -3,7 +3,7 @@
 - **File**: `viarail.zip`
 - **Publisher**: VIA Rail Canada
 - **Downloaded from**: https://www.viarail.ca/en/developer-resources
-- **Retrieved**: 2026-08-30
+- **Retrieved**: 2026-09-23
 - **sha256**: `50d96c9f361c8b91fad292f8aa8db727fb7c62110895d1ffc9534235335eb339`
 - **Feed validity** (`feed_info.txt`): 2026-08-17 → 2026-12-17
 
@@ -12,9 +12,13 @@
 VIA publishes updated feeds periodically. To adopt a new one:
 
 1. Download the new zip and replace `viarail.zip`.
-2. Update the sha256 and validity dates above.
-3. Run `bun run gtfs:build`.
+2. Update the retrieved date, sha256 and validity dates above.
+3. Run `bun run gtfs:build --retrieved`.
 4. Commit the regenerated `src/data/gtfs/` and `public/gtfs/` artifacts.
+
+Do this even when VIA has not published anything new. CI fails once the
+retrieved date is more than 14 days old, and `--retrieved` records the check
+even though the zip itself is unchanged.
 
 The build script asserts a set of invariants (unique stop codes, 19 distinct
 shapes, a feed that does not expire within 30 days) and fails loudly if VIA
