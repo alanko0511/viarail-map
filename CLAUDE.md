@@ -15,10 +15,12 @@ bun run preview         # Preview production build
 bun run test            # Run Vitest tests
 bun run lint            # oxlint
 bun run format          # oxfmt
+bun run format:check    # oxfmt, check only (what CI runs)
 bun run typecheck       # tsc --noEmit
 bun run deploy          # Typecheck, build, and deploy to Cloudflare Workers
 bun run cf-typegen      # Generate Cloudflare Worker types
 bun run gtfs:build      # Rebuild generated GTFS tables from data/gtfs/viarail.zip
+bun run gtfs:check-freshness # Fail when the committed GTFS zip has gone stale (runs in CI)
 bun run fixture:capture # Snapshot VIA's live tracker into a test fixture (args in README)
 ```
 
@@ -40,7 +42,8 @@ Package manager is **Bun**.
 ### Key directories
 
 - `src/routes/` — File-based routes. `__root.tsx` is the root layout
-  - `src/routes/train/$trainId.tsx` — Individual train detail page
+  - `src/routes/_map.tsx` — Pathless layout that renders the sidebar and map around the index and train pages, client-only (`ssr: false`)
+  - `src/routes/_map/train/$trainId.tsx` — Individual train detail page
 - `src/components/` — App-level components (map, sidebar, train timeline, etc.)
 - `src/components/ui/` — shadcn/ui primitives
 - `src/hooks/` — Custom React hooks (e.g., `use-mobile.ts`)
