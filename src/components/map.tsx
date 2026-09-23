@@ -167,6 +167,10 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
     if (!following || !activeTrainId) return
     const position = trains.get(activeTrainId)?.position
     if (!position) return
+    // Selecting a train starts a flyTo and, in the same flush or the next,
+    // this effect too. easeTo stops any camera animation in progress, so it
+    // would cut the flight short at the old zoom. The next poll recentres.
+    if (mapRef.current?.isEasing()) return
 
     mapRef.current?.easeTo({
       center: [position.lng, position.lat],
