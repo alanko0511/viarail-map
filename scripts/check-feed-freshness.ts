@@ -13,10 +13,11 @@
  */
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const MAX_AGE_DAYS = 14
 
-const ROOT = join(new URL("..", import.meta.url).pathname)
+const ROOT = fileURLToPath(new URL("..", import.meta.url))
 const FEED_INFO = join(ROOT, "src/data/gtfs/feed-info.json")
 
 const { builtAt } = JSON.parse(readFileSync(FEED_INFO, "utf8")) as {

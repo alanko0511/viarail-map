@@ -11,12 +11,13 @@
 import { createHash } from "node:crypto"
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import { unzipSync } from "fflate"
 
 import { parseCsv, parseGtfsTime } from "./gtfs/csv"
 
-const ROOT = join(new URL("..", import.meta.url).pathname)
+const ROOT = fileURLToPath(new URL("..", import.meta.url))
 const ZIP_PATH = join(ROOT, "data/gtfs/viarail.zip")
 const DATA_OUT = join(ROOT, "src/data/gtfs")
 const PUBLIC_OUT = join(ROOT, "public/gtfs")
