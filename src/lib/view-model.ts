@@ -222,6 +222,10 @@ function feedNow(feed: CanonicalFeed): number | null {
   return timestamp == null ? null : Number(timestamp) * 1000
 }
 
+function tripKey(tripId: string, startDate: string | undefined): string {
+  return `${tripId}\u0000${startDate ?? ""}`
+}
+
 export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
   const now = feedNow(feeds.tripUpdates)
   const positions = new Map<string, Record<string, any>>()
@@ -229,7 +233,9 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
     positions.set(entity.id, entity.vehicle)
   }
 
-  const alertsByTrip = new Map<string, Array<AlertView>>()
+  // Every departure of a multi-day train shares one trip, so an alert belongs
+  // to a trip on a service date, not to the trip alone.
+  const alertsByTrip = new Map<string, Set<AlertView>>()
   for (const entity of feeds.alerts.entity ?? []) {
     const alert = entity.alert
     const view: AlertView = {
@@ -240,9 +246,10 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
     for (const informed of alert.informedEntity ?? []) {
       const tripId = informed.trip?.tripId
       if (!tripId) continue
-      const list = alertsByTrip.get(tripId) ?? []
-      list.push(view)
-      alertsByTrip.set(tripId, list)
+      const key = tripKey(tripId, informed.trip.startDate)
+      const alerts = alertsByTrip.get(key) ?? new Set()
+      alerts.add(view)
+      alertsByTrip.set(key, alerts)
     }
   }
 
@@ -310,7 +317,7 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
       startDate,
       position,
       stops,
-      alerts: alertsByTrip.get(tripId) ?? [],
+      alerts: [...(alertsByTrip.get(tripKey(tripId, startDate)) ?? [])],
       stopsAreTruncated: stops.length < schedule.length,
     })
   }
