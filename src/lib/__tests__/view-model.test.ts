@@ -139,6 +139,33 @@ describe("toTrainViews", () => {
     )
   })
 
+  it("shows an alert once on each departure it names", () => {
+    // Both running Canadians carry the same advisory and share trip 111, so
+    // the feed folds them into one alert naming that trip twice, once per
+    // service date.
+    const canadians = views(trains).filter((train) => train.number === "1")
+
+    expect(canadians).toHaveLength(2)
+    for (const view of canadians) expect(view.alerts).toHaveLength(1)
+  })
+
+  it("keeps one departure's alert off another departure of the same train", () => {
+    const quiet = structuredClone(trains)
+    quiet["1 (08-26)"].alerts = []
+    const byKey = new Map(views(quiet).map((view) => [view.key, view]))
+
+    expect(byKey.get("1 (08-26)")!.alerts).toEqual([])
+    expect(byKey.get("1 (08-30)")!.alerts).toHaveLength(1)
+  })
+
+  it("numbers a joint service by its own train, not the pair", () => {
+    // The Maple Leaf's GTFS trip is "97-64"; the tracker runs it as train 97,
+    // and that is the number traincar.info and passengers know it by.
+    const view = views(trains).find((train) => train.key === "97")!
+
+    expect(view.number).toBe("97")
+  })
+
   it("does not read a prediction for a future stop as a visit", () => {
     // Train 45 has called at Ottawa and Fallowfield; the tracker still gives
     // Kingston and Toronto an estimate and a delay, which is a forecast, not an

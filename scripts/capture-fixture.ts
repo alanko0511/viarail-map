@@ -32,7 +32,7 @@ import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import type { Train } from "../src/server/schemas/train"
-import { fetchAllTrainData } from "../src/server/trains"
+import { fetchRawTrainData, parseAllTrainData } from "../src/server/trains"
 
 // fileURLToPath, not URL.pathname: a checkout under a directory with a space
 // keeps the %20 in a pathname and every write below would miss.
@@ -88,7 +88,11 @@ function shapes(train: Train): Array<string> {
   return found
 }
 
-const trains = await fetchAllTrainData()
+// The fixture keeps the raw payload, so a field the schema does not know yet,
+// or a train it rejects, is still there to replay. The parsed copy is only for
+// describing what was captured.
+const raw = (await fetchRawTrainData()) as Record<string, unknown>
+const trains = parseAllTrainData(raw)
 
 if (listing) {
   const rows = Object.entries(trains)
@@ -117,14 +121,14 @@ if (listing) {
 // groups the multi-day long-distance trains apart from the corridor; sorting
 // would only churn the diff on a refresh.
 const wantsAll = requested.length === 0
-const keys = wantsAll ? Object.keys(trains) : requested
+const keys = wantsAll ? Object.keys(raw) : requested
 
-const missing = keys.filter((key) => !(key in trains))
+const missing = keys.filter((key) => !(key in raw))
 if (missing.length > 0) {
   // Multi-day trains are keyed "1 (08-30)", so an exact key is required and a
   // near miss is worth spelling out rather than silently dropping.
   console.error(`\n  not running right now: ${missing.join(", ")}`)
-  const hints = Object.keys(trains).filter((key) =>
+  const hints = Object.keys(raw).filter((key) =>
     missing.some((want) => key.startsWith(want))
   )
   if (hints.length > 0) {
@@ -134,7 +138,8 @@ if (missing.length > 0) {
   process.exit(1)
 }
 
-const picked = Object.fromEntries(keys.map((key) => [key, trains[key]]))
+const picked = Object.fromEntries(keys.map((key) => [key, raw[key]]))
+const parsed = keys.filter((key) => key in trains).map((key) => trains[key])
 
 const today = new Date().toISOString().slice(0, 10)
 const path = join(FIXTURES, `${name}-${today}.json`)
@@ -159,7 +164,7 @@ try {
 // Every train carries the instant it was last polled, and they poll
 // independently, so a capture spans a minute or two rather than one instant.
 // The latest is the `NOW` to pin: it is the only one no train is ahead of.
-const polls = Object.values(picked)
+const polls = parsed
   .map((train) => train.poll)
   .filter((poll) => poll !== undefined)
   .sort()
@@ -167,7 +172,11 @@ const latest = polls.at(-1)
 
 console.log(`\nwrote ${path} (${keys.length} trains)`)
 for (const key of keys) {
-  const train = picked[key]
+  const train = trains[key]
+  if (!train) {
+    console.log(`  ${key.padEnd(12)} fails the schema; kept as captured`)
+    continue
+  }
   const found = shapes(train)
   // A whole-network capture is 60-odd lines of this; only the trains carrying
   // an unusual shape are worth reading back.

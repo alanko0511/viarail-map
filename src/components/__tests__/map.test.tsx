@@ -4,7 +4,8 @@
  * A train deep link must centre the map on that train once the map is ready,
  * even though the map mounts (and loads) after the first render. MapLibre is
  * stubbed with a `Map` that exposes `flyTo`/`easeTo` spies through its ref and
- * lets the test fire `onLoad` when it chooses.
+ * lets the test fire `onLoad` when it chooses. A flyTo leaves the stub easing
+ * until the test lands it, as MapLibre stays easing until the flight ends.
  */
 import { act, cleanup, render } from "@testing-library/react"
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest"
@@ -17,11 +18,17 @@ import type { AllTrainData } from "@/server/schemas/train"
 
 import fixture from "../../server/__tests__/fixtures/all-train-data-2026-08-30.json"
 
-const mapStub = vi.hoisted(() => ({
-  flyTo: vi.fn(),
-  easeTo: vi.fn(),
-  onLoad: null as (() => void) | null,
-}))
+const mapStub = vi.hoisted(() => {
+  const stub = {
+    easing: false,
+    flyTo: vi.fn(() => {
+      stub.easing = true
+    }),
+    easeTo: vi.fn(),
+    onLoad: null as (() => void) | null,
+  }
+  return stub
+})
 
 vi.mock("react-map-gl/maplibre", async () => {
   const { forwardRef, useImperativeHandle } = await import("react")
@@ -32,6 +39,7 @@ vi.mock("react-map-gl/maplibre", async () => {
     useImperativeHandle(ref, () => ({
       flyTo: mapStub.flyTo,
       easeTo: mapStub.easeTo,
+      isEasing: () => mapStub.easing,
     }))
     mapStub.onLoad = props.onLoad ?? null
     return <div data-testid="map">{props.children}</div>
@@ -87,6 +95,7 @@ afterEach(() => {
   cleanup()
   mapStub.flyTo.mockClear()
   mapStub.easeTo.mockClear()
+  mapStub.easing = false
   mapStub.onLoad = null
 })
 
@@ -143,11 +152,45 @@ describe("TrainMap with a preselected train", () => {
     act(() => mapStub.onLoad?.())
     expect(mapStub.flyTo).toHaveBeenCalledTimes(1)
 
+    mapStub.easing = false
     views.current = new Map(trains)
     rerender(<TrainMap activeTrainId={key} />)
 
     expect(mapStub.flyTo).toHaveBeenCalledTimes(1)
     // Follow mode keeps easing instead.
     expect(mapStub.easeTo).toHaveBeenCalled()
+  })
+
+  it("lets the flight land before following", () => {
+    // easeTo stops any camera animation in progress, so following straight
+    // away would cut the flight short at the old zoom.
+    const { key } = trainWithPosition()
+    views.current = trains
+
+    const { rerender } = render(<TrainMap activeTrainId={key} />)
+    act(() => mapStub.onLoad?.())
+
+    expect(mapStub.flyTo).toHaveBeenCalledTimes(1)
+    expect(mapStub.easeTo).not.toHaveBeenCalled()
+
+    mapStub.easing = false
+    views.current = new Map(trains)
+    rerender(<TrainMap activeTrainId={key} />)
+
+    expect(mapStub.easeTo).toHaveBeenCalledTimes(1)
+  })
+
+  it("flies again to a train reopened after deselecting it", () => {
+    const { key } = trainWithPosition()
+    views.current = trains
+
+    const { rerender } = render(<TrainMap activeTrainId={key} />)
+    act(() => mapStub.onLoad?.())
+    mapStub.easing = false
+
+    rerender(<TrainMap activeTrainId={undefined} />)
+    rerender(<TrainMap activeTrainId={key} />)
+
+    expect(mapStub.flyTo).toHaveBeenCalledTimes(2)
   })
 })

@@ -20,10 +20,14 @@ import {
 } from "@/components/ui/sidebar"
 import { useActiveTrainId } from "@/hooks/use-active-train-id"
 import { useLastTrainId } from "@/hooks/use-last-train-id"
+import { useTrainViews } from "@/hooks/use-train-views"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const activeTrainId = useActiveTrainId()
   const lastTrainId = useLastTrainId(activeTrainId)
+  // The stored id names one run of a train, so it goes stale once that run
+  // leaves the feed. Only offer a train that is still there.
+  const lastTrain = useTrainViews().get(lastTrainId ?? "")
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -48,15 +52,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
             <p>Search or click on a train to see details</p>
-            {lastTrainId && (
+            {lastTrain && (
               <p>
                 Last time you were looking at{" "}
                 <Link
                   to="/train/$trainId"
-                  params={{ trainId: lastTrainId }}
+                  params={{ trainId: lastTrain.key }}
                   className="underline hover:text-foreground"
                 >
-                  train {lastTrainId}
+                  train {lastTrain.number}
                 </Link>
               </p>
             )}

@@ -4,7 +4,8 @@
  * VIA republishes its schedule regularly and the feed the site serves is a
  * committed snapshot, so nothing forces a refresh on its own. This turns that
  * into a CI failure: once the zip is more than MAX_AGE_DAYS old, the build goes
- * red until someone downloads a new one and reruns `bun run gtfs:build`.
+ * red until someone downloads a new one and reruns
+ * `bun run gtfs:build --retrieved`.
  *
  * The age comes from `builtAt` in the generated feed-info.json, which
  * build-gtfs.ts only advances when the zip's sha256 changes.
@@ -13,10 +14,11 @@
  */
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const MAX_AGE_DAYS = 14
 
-const ROOT = join(new URL("..", import.meta.url).pathname)
+const ROOT = fileURLToPath(new URL("..", import.meta.url))
 const FEED_INFO = join(ROOT, "src/data/gtfs/feed-info.json")
 
 const { builtAt } = JSON.parse(readFileSync(FEED_INFO, "utf8")) as {
@@ -54,7 +56,7 @@ if (ageDays > MAX_AGE_DAYS) {
   console.error(
     `\n  The GTFS feed was retrieved ${builtAt}, ${ageDays} days ago (limit ${MAX_AGE_DAYS}).\n` +
       `  Download a fresh copy from https://www.viarail.ca/en/developer-resources\n` +
-      `  to data/gtfs/viarail.zip, then run: bun run gtfs:build\n`
+      `  to data/gtfs/viarail.zip, then run: bun run gtfs:build --retrieved\n`
   )
   process.exit(1)
 }

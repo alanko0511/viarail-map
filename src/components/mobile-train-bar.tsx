@@ -8,8 +8,10 @@ export function MobileTrainBar({ trainId }: { trainId: string | undefined }) {
   const { toggleSidebar } = useSidebar()
 
   const nextStop = train?.stops.find((stop) => stop.status === "coming")
-  const nextStopTime =
-    nextStop?.arrival?.predicted ?? nextStop?.arrival?.scheduled
+  // The origin has no arrival, only a departure.
+  const nextStopTime = nextStop?.arrival
+    ? (nextStop.arrival.predicted ?? nextStop.arrival.scheduled)
+    : (nextStop?.departure?.predicted ?? nextStop?.departure?.scheduled)
 
   return (
     // The wrapper only centres the pill. It must not catch taps, or its

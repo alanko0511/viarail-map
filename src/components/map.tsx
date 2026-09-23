@@ -146,7 +146,12 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   // have no position yet), so the train is only marked as handled once the
   // fly-to actually happened; until then every re-run retries.
   useEffect(() => {
-    if (!activeTrainId || activeTrainId === prevTrainIdRef.current) return
+    // Deselecting forgets the train, so reopening it flies there again.
+    if (!activeTrainId) {
+      prevTrainIdRef.current = undefined
+      return
+    }
+    if (activeTrainId === prevTrainIdRef.current) return
     if (!mapLoaded) return
 
     const position = trains.get(activeTrainId)?.position
@@ -162,6 +167,10 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
     if (!following || !activeTrainId) return
     const position = trains.get(activeTrainId)?.position
     if (!position) return
+    // Selecting a train starts a flyTo and, in the same flush or the next,
+    // this effect too. easeTo stops any camera animation in progress, so it
+    // would cut the flight short at the old zoom. The next poll recentres.
+    if (mapRef.current?.isEasing()) return
 
     mapRef.current?.easeTo({
       center: [position.lng, position.lat],
