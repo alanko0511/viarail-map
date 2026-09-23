@@ -146,7 +146,12 @@ export function TrainMap({ activeTrainId }: { activeTrainId?: string }) {
   // have no position yet), so the train is only marked as handled once the
   // fly-to actually happened; until then every re-run retries.
   useEffect(() => {
-    if (!activeTrainId || activeTrainId === prevTrainIdRef.current) return
+    // Deselecting forgets the train, so reopening it flies there again.
+    if (!activeTrainId) {
+      prevTrainIdRef.current = undefined
+      return
+    }
+    if (activeTrainId === prevTrainIdRef.current) return
     if (!mapLoaded) return
 
     const position = trains.get(activeTrainId)?.position
