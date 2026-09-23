@@ -117,6 +117,18 @@ export function summarizeConsist(response: ConsistResponse): ConsistSummary {
   }
 }
 
+/**
+ * VIA's own endpoints for trains whose GTFS trip runs on past them.
+ *
+ * The Maple Leaf is published as one trip, "97-64", from Toronto to New York,
+ * but VIA runs and sells only the Canadian half as train 97, and the
+ * reservation system knows no station past Niagara Falls.
+ */
+const VIA_ENDPOINTS: Record<string, [origin: string, destination: string]> = {
+  "97": ["TRTO", "NIAG"],
+  "98": ["NIAG", "TRTO"],
+}
+
 /** `"20260831"` -> `"2026-08-31"`, the form traincar.info expects. */
 function toIsoDate(startDate: string): string {
   return `${startDate.slice(0, 4)}-${startDate.slice(4, 6)}-${startDate.slice(6, 8)}`
@@ -133,6 +145,16 @@ function toIsoDate(startDate: string): string {
  */
 export function consistQuery(train: TrainView): ConsistQuery | null {
   if (!train.tripId) return null
+
+  const endpoints = VIA_ENDPOINTS[train.number]
+  if (endpoints) {
+    return {
+      number: train.number,
+      date: toIsoDate(train.startDate),
+      origin: endpoints[0],
+      destination: endpoints[1],
+    }
+  }
 
   const times = stopTimes[train.tripId]
   if (!times || times.length < 2) return null

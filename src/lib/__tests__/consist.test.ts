@@ -138,4 +138,17 @@ describe("consistQuery", () => {
       destination: "OTTW",
     })
   })
+
+  it("looks up the Maple Leaf on VIA's half only", () => {
+    // Trip 502 runs Toronto to New York, but traincar.info answers train 97
+    // only between Toronto and Niagara Falls; New York is "Requested station
+    // not found on requested service".
+    const query = consistQuery(trainView({ number: "97", tripId: "502" }))
+
+    expect(query).toMatchObject({
+      number: "97",
+      origin: "TRTO",
+      destination: "NIAG",
+    })
+  })
 })

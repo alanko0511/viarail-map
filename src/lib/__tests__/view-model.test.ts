@@ -158,6 +158,14 @@ describe("toTrainViews", () => {
     expect(byKey.get("1 (08-30)")!.alerts).toHaveLength(1)
   })
 
+  it("numbers a joint service by its own train, not the pair", () => {
+    // The Maple Leaf's GTFS trip is "97-64"; the tracker runs it as train 97,
+    // and that is the number traincar.info and passengers know it by.
+    const view = views(trains).find((train) => train.key === "97")!
+
+    expect(view.number).toBe("97")
+  })
+
   it("does not read a prediction for a future stop as a visit", () => {
     // Train 45 has called at Ottawa and Fallowfield; the tracker still gives
     // Kingston and Toronto an estimate and a delay, which is a forecast, not an

@@ -310,7 +310,9 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
 
     views.push({
       key: entity.id,
-      number: trip.shortName,
+      // The tracker's own number for this run. The schedule names a joint
+      // service by both halves ("97-64"), which is not a train anyone boards.
+      number: update.vehicle?.label ?? trip.shortName,
       tripId,
       routeLongName: routeById.get(trip.routeId)?.longName ?? "",
       headsign: trip.headsign,
