@@ -4,6 +4,11 @@ import { TrainSchema } from "@/server/schemas/train"
 const VIARAIL_API_URL = "https://tsimobile.viarail.ca/data/allData.json"
 
 export async function fetchAllTrainData(): Promise<AllTrainData> {
+  return parseAllTrainData(await fetchRawTrainData())
+}
+
+/** The tracker's payload exactly as it came off the wire, unvalidated. */
+export async function fetchRawTrainData(): Promise<unknown> {
   const response = await fetch(VIARAIL_API_URL, {
     headers: {
       // The API is behind AWS Cloudfront and blocks requests when no user-agent is provided, so we need to provide a fake one.
@@ -19,8 +24,7 @@ export async function fetchAllTrainData(): Promise<AllTrainData> {
     )
   }
 
-  const data = await response.json()
-  return parseAllTrainData(data)
+  return response.json()
 }
 
 /**
