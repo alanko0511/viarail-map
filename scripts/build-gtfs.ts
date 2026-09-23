@@ -7,6 +7,7 @@
  *   - public/gtfs/shapes.geojson  deduplicated route geometry for the map
  *
  * Run with: bun run gtfs:build
+ *   After downloading the zip: bun run gtfs:build --retrieved
  */
 import { createHash } from "node:crypto"
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
@@ -46,9 +47,14 @@ const sourceSha256 = createHash("sha256").update(zipBytes).digest("hex")
  * it arrived. `/gtfs` shows this as "Retrieved" and CI fails once it falls too
  * far behind, so it has to track the data rather than the clock. Read here,
  * before the output directories are wiped further down.
+ *
+ * `--retrieved` stamps today even when the hash is unchanged. VIA can go weeks
+ * without republishing, and a fresh download that turns out identical is still
+ * a check that the committed feed is current. CI rebuilds without the flag.
  */
 const retrievedAt = (() => {
   const today = new Date().toISOString().slice(0, 10)
+  if (process.argv.includes("--retrieved")) return today
   try {
     const previous = JSON.parse(
       readFileSync(join(DATA_OUT, "feed-info.json"), "utf8")
