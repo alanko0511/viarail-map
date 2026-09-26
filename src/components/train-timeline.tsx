@@ -216,6 +216,12 @@ export function TrainTimeline({ trainId }: { trainId: string }) {
             VIA publishes only part of this train's stop list.
           </p>
         )}
+        {train.scheduleModified && (
+          <p className="px-2 pb-3 text-xs text-muted-foreground">
+            Running to a modified schedule today. Times shown are VIA's adjusted
+            timetable.
+          </p>
+        )}
         {train.stops.map((stop, i) => (
           <TimelineStop
             key={stop.code + i}

@@ -1,12 +1,6 @@
-import { fromZonedTime } from "date-fns-tz"
-
 import type { GtfsStopTime } from "@/data/gtfs"
 import { routeById, stopById, stopTimes, tripById } from "@/data/gtfs"
-
-/** VIA's agency_timezone. GTFS stop_times are stored in it, whatever the stop's
- * own timezone: the Canadian's 15:00 departure from Vancouver is written
- * 18:00:00 because that is the hour in Toronto. */
-const AGENCY_TIMEZONE = "America/Toronto"
+import { AGENCY_TIMEZONE, serviceTime } from "@/lib/service-time"
 
 /** A stop's dwell is only worth showing when the train actually waits. Upstream
  * pads pass-through stops with a departure a second or two after arrival. */
@@ -58,19 +52,8 @@ export interface TrainView {
   alerts: Array<AlertView>
   /** True when the tracker published fewer stops than the trip actually has. */
   stopsAreTruncated: boolean
-}
-
-/**
- * Resolves a GTFS time to a real instant.
- *
- * GTFS counts seconds from noon minus twelve hours on the service day, which is
- * midnight except when the clocks change. Times past 86400 belong to the next
- * calendar day and are meant to run over, so no wrapping happens here.
- */
-function serviceTime(startDate: string, seconds: number): Date {
-  const day = `${startDate.slice(0, 4)}-${startDate.slice(4, 6)}-${startDate.slice(6, 8)}`
-  const noon = fromZonedTime(`${day}T12:00:00`, AGENCY_TIMEZONE)
-  return new Date(noon.getTime() - 12 * 3600 * 1000 + seconds * 1000)
+  /** True when the train runs to a modified timetable rather than GTFS's. */
+  scheduleModified: boolean
 }
 
 interface CanonicalFeed {
@@ -113,6 +96,20 @@ function predicted(
   }
 }
 
+/**
+ * When an event was meant to happen. A replacement trip carries its own
+ * timetable in `scheduledTime`; everything else runs to the static schedule.
+ */
+function scheduledAt(
+  event: Record<string, any> | undefined,
+  seconds: number,
+  startDate: string
+): Date {
+  return event?.scheduledTime != null
+    ? new Date(Number(event.scheduledTime) * 1000)
+    : serviceTime(startDate, seconds)
+}
+
 function toStopView(
   update: Record<string, any>,
   row: GtfsStopTime,
@@ -131,9 +128,13 @@ function toStopView(
   const departureSeconds = isDestination ? null : departure
 
   const arrivalAt =
-    arrivalSeconds == null ? null : serviceTime(startDate, arrivalSeconds)
+    arrivalSeconds == null
+      ? null
+      : scheduledAt(update.arrival, arrivalSeconds, startDate)
   const departureAt =
-    departureSeconds == null ? null : serviceTime(startDate, departureSeconds)
+    departureSeconds == null
+      ? null
+      : scheduledAt(update.departure, departureSeconds, startDate)
 
   const delay = update.arrival?.delay ?? update.departure?.delay
 
@@ -148,9 +149,10 @@ function toStopView(
     delayMinutes: typeof delay === "number" ? delay / 60 : null,
     cancelled: update.scheduleRelationship === "SKIPPED",
     showDwell:
-      arrivalSeconds != null &&
-      departureSeconds != null &&
-      departureSeconds - arrivalSeconds > DWELL_THRESHOLD_SECONDS,
+      arrivalAt != null &&
+      departureAt != null &&
+      departureAt.getTime() - arrivalAt.getTime() >
+        DWELL_THRESHOLD_SECONDS * 1000,
   }
 }
 
@@ -188,7 +190,7 @@ function estimate(
   startDate: string
 ): Date | null {
   if (!event || seconds == null) return null
-  return predicted(serviceTime(startDate, seconds), event).predicted
+  return predicted(scheduledAt(event, seconds, startDate), event).predicted
 }
 
 /**
@@ -263,6 +265,7 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
     const startDate: string = update.trip.startDate
     const trip = tripById.get(tripId)
     if (!trip) continue
+    const replacement = update.trip.scheduleRelationship === "REPLACEMENT"
 
     const schedule = stopTimes[tripId] ?? []
     const byStopId = new Map(schedule.map((row) => [row[1], row]))
@@ -320,7 +323,10 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
       position,
       stops,
       alerts: [...(alertsByTrip.get(tripKey(tripId, startDate)) ?? [])],
-      stopsAreTruncated: stops.length < schedule.length,
+      // A replacement lists its complete journey, so a stop it leaves out is
+      // one the train is not making today.
+      stopsAreTruncated: !replacement && stops.length < schedule.length,
+      scheduleModified: replacement,
     })
   }
 
@@ -346,6 +352,7 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
       stops: [],
       alerts: [],
       stopsAreTruncated: false,
+      scheduleModified: false,
     })
   }
 

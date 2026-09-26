@@ -6,8 +6,10 @@ import type { AllTrainData } from "@/server/schemas/train"
 
 import fixture from "../../server/__tests__/fixtures/all-train-data-2026-08-30.json"
 import edgeFixture from "../../server/__tests__/fixtures/edge-cases.json"
+import detourFixture from "../../server/__tests__/fixtures/guildwood-detour-2026-09-26.json"
 
 const NOW = new Date("2026-08-30T15:17:32Z")
+const DETOUR_NOW = new Date("2026-09-26T12:41:00Z")
 
 function views(input: unknown, now: Date = NOW) {
   const feeds = buildFeeds(input as AllTrainData, now)
@@ -203,5 +205,44 @@ describe("toTrainViews", () => {
     expect(view.stops[thompson].status).toBe("arrived")
     expect(view.stops[thompson - 1].status).toBe("left")
     expect(view.stops[thompson + 1].status).toBe("coming")
+  })
+
+  it("shows a retimed train against the timetable it is running to", () => {
+    // GTFS has train 643 at Oshawa at 12:35 and Toronto at 13:18. For the
+    // Guildwood closure VIA moved them to 12:02 and 13:32, and the train is a
+    // minute behind that, which is what VIA's own tracker shows.
+    const view = views(detourFixture, DETOUR_NOW).find(
+      (train) => train.key === "643"
+    )!
+    const oshawa = view.stops.find((stop) => stop.code === "OSHA")!
+    const toronto = view.stops.at(-1)!
+
+    expect(view.scheduleModified).toBe(true)
+    expect(oshawa.arrival!.scheduled.getTime() / 1000).toBe(1790438520)
+    expect(oshawa.arrival!.predicted!.getTime() / 1000).toBe(1790438606)
+    expect(oshawa.delayMinutes).toBe(1)
+    expect(toronto.code).toBe("TRTO")
+    expect(toronto.arrival!.scheduled.getTime() / 1000).toBe(1790443920)
+  })
+
+  it("drops a stop the retimed train skips without calling the list partial", () => {
+    // Guildwood is in trip 461 but closed today. The replacement is the whole
+    // journey, so its absence is a skipped station, not a truncated feed.
+    const view = views(detourFixture, DETOUR_NOW).find(
+      (train) => train.key === "643"
+    )!
+
+    expect(view.stops.map((stop) => stop.code)).not.toContain("GUIL")
+    expect(view.stopsAreTruncated).toBe(false)
+  })
+
+  it("gives a retimed origin no arrival and its terminus no departure", () => {
+    const view = views(detourFixture, DETOUR_NOW).find(
+      (train) => train.key === "643"
+    )!
+
+    expect(view.stops[0].arrival).toBeNull()
+    expect(view.stops[0].departure!.scheduled.getTime() / 1000).toBe(1790425740)
+    expect(view.stops.at(-1)!.departure).toBeNull()
   })
 })

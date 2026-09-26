@@ -114,6 +114,7 @@ function trainView(overrides: Partial<TrainView>): TrainView {
     stops: [],
     alerts: [],
     stopsAreTruncated: false,
+    scheduleModified: false,
     ...overrides,
   }
 }

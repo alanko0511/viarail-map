@@ -6,6 +6,8 @@ export interface AlignedStop {
   feedStop: StationTime
   stopId: string
   stopSequence: number
+  /** The scheduled trip's row for this stop. */
+  row: GtfsStopTime
 }
 
 export interface Alignment {
@@ -43,7 +45,12 @@ export function alignStops(
       continue
     }
 
-    aligned.push({ feedStop, stopId, stopSequence: schedule[index][0] })
+    aligned.push({
+      feedStop,
+      stopId,
+      stopSequence: schedule[index][0],
+      row: schedule[index],
+    })
     cursor = index + 1
   }
 
