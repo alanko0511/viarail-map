@@ -1,8 +1,11 @@
 import { transit_realtime as rt } from "gtfs-realtime-bindings"
 
 import { stopByCode, stopTimes } from "@/data/gtfs"
+import { serviceTime } from "@/lib/service-time"
+import type { AlignedStop } from "@/server/gtfs-rt/align-stops"
 import { alignStops } from "@/server/gtfs-rt/align-stops"
 import { decodeEntities } from "@/server/gtfs-rt/html-entities"
+import type { TripMatch } from "@/server/gtfs-rt/resolve-trip"
 import { resolveTrip, trainNumber } from "@/server/gtfs-rt/resolve-trip"
 import type {
   Alert,
@@ -47,6 +50,77 @@ const AGENCY_ID = "1"
 
 /** GTFS-RT reports speed in metres per second; the tracker reports km/h. */
 const KMH_TO_MS = 1 / 3.6
+
+interface TripPlan {
+  match: TripMatch
+  aligned: Array<AlignedStop>
+  /**
+   * The tracker is running this departure to a timetable the static schedule
+   * does not have, such as the adjusted times around a track closure.
+   */
+  replacement: boolean
+}
+
+/**
+ * How far the tracker's timetable must stray from GTFS before it counts as a
+ * different schedule. The two disagree by a minute or two at a handful of stops
+ * on an ordinary day, which is rounding, not a change of plan.
+ */
+const RESCHEDULED_MS = 5 * 60 * 1000
+
+/** Whether the tracker schedules this event away from the GTFS time. */
+function rescheduled(
+  time: ScheduledTime | undefined,
+  seconds: number | null,
+  startDate: string
+): boolean {
+  if (!time || seconds == null) return false
+  const scheduled = Date.parse(time.scheduled)
+  const planned = serviceTime(startDate, seconds).getTime()
+  return Math.abs(scheduled - planned) >= RESCHEDULED_MS
+}
+
+/**
+ * Resolves a train to its scheduled trip and decides how to publish it.
+ *
+ * GTFS-RT wants a departure running to a modified schedule published as a
+ * REPLACEMENT carrying the complete journey, since the static stop_times no
+ * longer describe it. That needs the tracker to list the whole trip, so a
+ * truncated stop list stays SCHEDULED whatever its times say.
+ */
+function planTrip(feedKey: string, train: Train): TripPlan | null {
+  const match = resolveTrip(feedKey, train)
+  if (!match) return null
+
+  const schedule = stopTimes[match.tripId] ?? []
+  const { aligned } = alignStops(train.times, schedule)
+  const startDate = train.instance.replaceAll("-", "")
+
+  const complete =
+    aligned.length > 0 &&
+    aligned[0].stopSequence === schedule[0]?.[0] &&
+    aligned.at(-1)!.stopSequence === schedule.at(-1)?.[0]
+  const replacement =
+    complete &&
+    aligned.some(
+      ({ feedStop, row }) =>
+        rescheduled(feedStop.arrival, row[2], startDate) ||
+        rescheduled(feedStop.departure, row[3], startDate)
+    )
+
+  return { match, aligned, replacement }
+}
+
+function tripDescriptor(plan: TripPlan, train: Train): rt.ITripDescriptor {
+  return {
+    tripId: plan.match.tripId,
+    routeId: plan.match.routeId,
+    startDate: train.instance.replaceAll("-", ""),
+    scheduleRelationship: plan.replacement
+      ? rt.TripDescriptor.ScheduleRelationship.REPLACEMENT
+      : rt.TripDescriptor.ScheduleRelationship.SCHEDULED,
+  }
+}
 
 /**
  * Index of the last stop the train has actually called at. `eta === "ARR"` is
@@ -98,27 +172,16 @@ function vehicleEntity(
 ): rt.IFeedEntity | null {
   if (train.lat == null || train.lng == null) return null
 
-  const match = resolveTrip(feedKey, train)
+  const plan = planTrip(feedKey, train)
   const target = currentStop(train, now)
   const placed = target
-    ? alignStops(
-        train.times,
-        match ? stopTimes[match.tripId] : []
-      ).aligned.find((stop) => stop.feedStop.code === target.code)
+    ? plan?.aligned.find((stop) => stop.feedStop.code === target.code)
     : undefined
 
   return {
     id: feedKey,
     vehicle: {
-      trip: match
-        ? {
-            tripId: match.tripId,
-            routeId: match.routeId,
-            startDate: train.instance.replaceAll("-", ""),
-            scheduleRelationship:
-              rt.TripDescriptor.ScheduleRelationship.SCHEDULED,
-          }
-        : undefined,
+      trip: plan ? tripDescriptor(plan, train) : undefined,
       vehicle: { id: feedKey, label: trainNumber(feedKey) },
       position: {
         latitude: train.lat,
@@ -165,16 +228,67 @@ function stopTimeEvent(
   return event
 }
 
+/**
+ * One stop of a replacement trip. Its timetable is the tracker's, so both
+ * events are required and each carries its scheduled time, with the prediction
+ * alongside when there is one. The delay is measured from that same timetable,
+ * which is what VIA reports it against.
+ */
+function replacementUpdate({
+  feedStop,
+  stopId,
+  stopSequence,
+}: AlignedStop): rt.TripUpdate.IStopTimeUpdate {
+  // A train neither arrives where it starts nor departs where it terminates,
+  // but a replacement stop needs both events, so the one stands in for the
+  // other.
+  const arrival = feedStop.arrival ?? feedStop.departure
+  const departure = feedStop.departure ?? feedStop.arrival
+  const delayMinutes = feedStop.diffMin
+  const predicting = !feedStop.cancelled && delayMinutes != null
+
+  const event = (
+    time: ScheduledTime | undefined
+  ): rt.TripUpdate.IStopTimeEvent => {
+    const scheduledTime = time
+      ? Math.floor(Date.parse(time.scheduled) / 1000)
+      : undefined
+    if (!predicting || scheduledTime == null) return { scheduledTime }
+
+    // A replacement trip must publish the absolute time, so where the
+    // estimate cannot be trusted it is rebuilt from the delay instead.
+    const prediction = stopTimeEvent(time, delayMinutes)
+    return {
+      ...prediction,
+      scheduledTime,
+      time: prediction.time ?? scheduledTime + delayMinutes * 60,
+    }
+  }
+
+  return {
+    stopId,
+    stopSequence,
+    scheduleRelationship: feedStop.cancelled
+      ? rt.TripUpdate.StopTimeUpdate.ScheduleRelationship.SKIPPED
+      : predicting
+        ? rt.TripUpdate.StopTimeUpdate.ScheduleRelationship.SCHEDULED
+        : rt.TripUpdate.StopTimeUpdate.ScheduleRelationship.NO_DATA,
+    arrival: event(arrival),
+    departure: event(departure),
+  }
+}
+
 function tripUpdateEntity(
   feedKey: string,
   train: Train
 ): rt.IFeedEntity | null {
-  const match = resolveTrip(feedKey, train)
-  if (!match) return null
+  const plan = planTrip(feedKey, train)
+  if (!plan) return null
 
-  const { aligned } = alignStops(train.times, stopTimes[match.tripId])
+  const stopTimeUpdate = plan.aligned.map((stop) => {
+    if (plan.replacement) return replacementUpdate(stop)
 
-  const stopTimeUpdate = aligned.map(({ feedStop, stopId, stopSequence }) => {
+    const { feedStop, stopId, stopSequence } = stop
     const update: rt.TripUpdate.IStopTimeUpdate = { stopId, stopSequence }
     const delayMinutes = feedStop.diffMin
 
@@ -204,12 +318,7 @@ function tripUpdateEntity(
   return {
     id: feedKey,
     tripUpdate: {
-      trip: {
-        tripId: match.tripId,
-        routeId: match.routeId,
-        startDate: train.instance.replaceAll("-", ""),
-        scheduleRelationship: rt.TripDescriptor.ScheduleRelationship.SCHEDULED,
-      },
+      trip: tripDescriptor(plan, train),
       vehicle: { id: feedKey, label: trainNumber(feedKey) },
       stopTimeUpdate,
     },

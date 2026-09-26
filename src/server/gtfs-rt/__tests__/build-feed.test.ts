@@ -7,10 +7,13 @@ import type { AllTrainData } from "@/server/schemas/train"
 
 import fixture from "../../__tests__/fixtures/all-train-data-2026-08-30.json"
 import edgeFixture from "../../__tests__/fixtures/edge-cases.json"
+import detourFixture from "../../__tests__/fixtures/guildwood-detour-2026-09-26.json"
 
 const trains = fixture as unknown as AllTrainData
 const edgeCases = edgeFixture as unknown as AllTrainData
+const detour = detourFixture as unknown as AllTrainData
 const NOW = new Date("2026-08-30T15:17:32Z")
+const DETOUR_NOW = new Date("2026-09-26T12:41:00Z")
 
 describe("buildFeeds", () => {
   it("stamps every feed with a spec-compliant header", () => {
@@ -187,6 +190,80 @@ describe("buildFeeds", () => {
     expect(cancelled).toEqual([])
   })
 
+  it("publishes a train on a modified timetable as a replacement", () => {
+    // Guildwood closed for track work on 2026-09-26 and VIA retimed the
+    // Corridor around it. Train 643 is trip 461, which GTFS has reaching Oshawa
+    // at 12:35; the tracker has it at 12:02 and running a minute late.
+    const feed = buildFeeds(detour, DETOUR_NOW).tripUpdates
+    const update = feed.entity.find((e) => e.id === "643")!.tripUpdate!
+
+    expect(update.trip.tripId).toBe("461")
+    expect(update.trip.scheduleRelationship).toBe(
+      rt.TripDescriptor.ScheduleRelationship.REPLACEMENT
+    )
+
+    const oshawa = update.stopTimeUpdate!.find((u) => u.stopId === "367")!
+    expect(Number(oshawa.arrival!.scheduledTime)).toBe(1790438520) // 12:02
+    expect(oshawa.arrival!.delay).toBe(60)
+    expect(Number(oshawa.arrival!.time)).toBe(1790438606) // 12:03:26
+  })
+
+  it("gives a replacement its whole journey and nothing else", () => {
+    // The replacement stands in for the static trip, so every stop needs both
+    // events with a scheduled time, and a stop it omits is not being served.
+    const feed = buildFeeds(detour, DETOUR_NOW).tripUpdates
+    const updates = feed.entity.find((e) => e.id === "643")!.tripUpdate!
+      .stopTimeUpdate!
+
+    expect(updates).toHaveLength(12)
+    expect(updates.some((u) => u.stopId === "450")).toBe(false) // Guildwood
+    expect(updates[0].stopId).toBe("617") // Ottawa, first stop of trip 461
+    expect(updates.at(-1)!.stopId).toBe("119") // Toronto
+
+    for (const u of updates) {
+      expect(u.arrival!.scheduledTime).not.toBeNull()
+      expect(u.departure!.scheduledTime).not.toBeNull()
+    }
+    const sequences = updates.map((u) => u.stopSequence!)
+    expect(sequences).toEqual([...sequences].sort((a, b) => a - b))
+  })
+
+  it("marks the vehicle's trip as the replacement too", () => {
+    const feed = buildFeeds(detour, DETOUR_NOW).vehiclePositions
+    const vehicle = feed.entity.find((e) => e.id === "643")!.vehicle!
+
+    expect(vehicle.trip!.scheduleRelationship).toBe(
+      rt.TripDescriptor.ScheduleRelationship.REPLACEMENT
+    )
+  })
+
+  it("keeps a truncated stop list SCHEDULED, whatever its times say", () => {
+    // Train 54 is retimed too, but the tracker stops listing it at
+    // Fallowfield. A replacement must describe the whole journey, and
+    // publishing this one would claim the train never reaches Ottawa.
+    const feed = buildFeeds(detour, DETOUR_NOW).tripUpdates
+    const trip = feed.entity.find((e) => e.id === "54")!.tripUpdate!.trip
+
+    expect(trip.scheduleRelationship).toBe(
+      rt.TripDescriptor.ScheduleRelationship.SCHEDULED
+    )
+  })
+
+  it("does not read a minute or two of drift as a new timetable", () => {
+    // On an ordinary day the tracker and GTFS disagree by a minute at a
+    // handful of stops (train 37 reaches Ottawa at 18:37 in one, 18:36 in the
+    // other). That is rounding, and every trip stays SCHEDULED.
+    const feed = buildFeeds(trains, NOW).tripUpdates
+
+    expect(
+      feed.entity.filter(
+        (e) =>
+          e.tripUpdate!.trip.scheduleRelationship !==
+          rt.TripDescriptor.ScheduleRelationship.SCHEDULED
+      )
+    ).toEqual([])
+  })
+
   it("still locates a train the schedule does not know, without a trip", () => {
     // Seasonal and special services show up in the tracker before the
     // published schedule catches up. A position is still useful; a trip update
@@ -274,6 +351,7 @@ describe("buildFeeds", () => {
   it.each([
     ["the live capture", trains],
     ["the edge cases", edgeCases],
+    ["the Guildwood detour", detour],
   ])("produces feeds that survive a protobuf round trip on %s", (_, input) => {
     const feeds = buildFeeds(input, NOW)
 
