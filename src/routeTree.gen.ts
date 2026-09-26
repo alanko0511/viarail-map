@@ -9,19 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as GtfsRouteImport } from './routes/gtfs'
 import { Route as MapRouteImport } from './routes/_map'
+import { Route as GtfsRouteImport } from './routes/gtfs'
 import { Route as MapIndexRouteImport } from './routes/_map/index'
 import { Route as GtfsRtFeedRouteImport } from './routes/gtfs-rt/$feed'
 import { Route as MapTrainTrainIdRouteImport } from './routes/_map/train/$trainId'
 
+const MapRoute = MapRouteImport.update({
+  id: '/_map',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GtfsRoute = GtfsRouteImport.update({
   id: '/gtfs',
   path: '/gtfs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MapRoute = MapRouteImport.update({
-  id: '/_map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapIndexRoute = MapIndexRouteImport.update({
@@ -82,18 +82,18 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/gtfs': {
-      id: '/gtfs'
-      path: '/gtfs'
-      fullPath: '/gtfs'
-      preLoaderRoute: typeof GtfsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_map': {
       id: '/_map'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof MapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gtfs': {
+      id: '/gtfs'
+      path: '/gtfs'
+      fullPath: '/gtfs'
+      preLoaderRoute: typeof GtfsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_map/': {

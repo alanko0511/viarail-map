@@ -10,30 +10,16 @@ import {
 } from "@/components/ui/sidebar"
 import { useActiveTrainId } from "@/hooks/use-active-train-id"
 import { useIsMobile } from "@/hooks/use-mobile"
-import type { CanonicalFeeds } from "@/lib/view-model"
-import { getFeeds } from "@/server/gtfs-rt/feeds"
-
-/** The last feeds that loaded. A failed poll keeps showing these rather than
- * clearing every train off the map until the next one succeeds. */
-let lastFeeds: CanonicalFeeds = {
-  tripUpdates: {},
-  vehiclePositions: {},
-  alerts: {},
-}
+import { feedsQuery } from "@/lib/feeds-query"
 
 export const Route = createFileRoute("/_map")({
   // The map needs a browser to draw anything, and its data is stale within
   // seconds, so there is nothing worth rendering on the server. Keeping the
   // live feed off the server also means /gtfs never touches VIA.
   ssr: false,
-  loader: async () => {
-    try {
-      lastFeeds = await getFeeds()
-    } catch {
-      // Keep the previous poll's data; the next poll retries.
-    }
-    return { feeds: lastFeeds }
-  },
+  // Holds the first render until the feeds have been tried once. It never
+  // throws: a failed first fetch shows an empty map while Query retries.
+  loader: ({ context }) => context.queryClient.prefetchQuery(feedsQuery),
   component: MapLayout,
 })
 
