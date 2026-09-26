@@ -1,9 +1,9 @@
+import type { QueryClient } from "@tanstack/react-query"
 import {
   HeadContent,
   Outlet,
   Scripts,
-  createRootRoute,
-  useRouter,
+  createRootRouteWithContext,
 } from "@tanstack/react-router"
 import { configure } from "onedollarstats"
 import { useEffect } from "react"
@@ -12,7 +12,9 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 
 import appCss from "../styles.css?url"
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{
+  queryClient: QueryClient
+}>()({
   head: () => ({
     meta: [
       {
@@ -42,26 +44,12 @@ export const Route = createRootRoute({
   component: RootLayout,
 })
 
-const REFRESH_INTERVAL_MS = 15_000
-
 function RootLayout() {
-  const router = useRouter()
-
   useEffect(() => {
     configure({
       trackLocalhostAs: "viarail-map.alanko.dev",
     })
   }, [])
-
-  // Upstream refreshes every 15s, so polling faster only wastes requests.
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        router.invalidate()
-      }
-    }, REFRESH_INTERVAL_MS)
-    return () => clearInterval(interval)
-  }, [router])
 
   return (
     <TooltipProvider>
