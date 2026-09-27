@@ -111,6 +111,7 @@ export function TrainSearchCombobox() {
       <ComboboxInput
         className="w-full"
         placeholder="Search train number..."
+        aria-label="Search train number"
         inputMode="numeric"
       />
       <ComboboxContent>
