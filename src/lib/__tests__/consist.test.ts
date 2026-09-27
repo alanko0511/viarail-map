@@ -108,6 +108,7 @@ function trainView(overrides: Partial<TrainView>): TrainView {
     number: "40",
     tripId: null,
     routeLongName: "Ottawa - Toronto",
+    origin: "Toronto",
     headsign: "Ottawa",
     startDate: "20260831",
     position: null,
