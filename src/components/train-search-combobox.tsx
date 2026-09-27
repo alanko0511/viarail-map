@@ -104,7 +104,9 @@ export function TrainSearchCombobox() {
       autoHighlight
       // Opening scrolls the list to the selected train, and filtering keeps
       // that offset, which hides the highlighted first match above the fold.
-      onInputValueChange={() => listRef.current?.scrollTo({ top: 0 })}
+      onInputValueChange={() => {
+        if (listRef.current) listRef.current.scrollTop = 0
+      }}
     >
       <ComboboxInput
         className="w-full"
