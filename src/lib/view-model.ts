@@ -45,6 +45,8 @@ export interface TrainView {
   number: string
   tripId: string | null
   routeLongName: string
+  /** Where the trip starts, from the schedule rather than the tracker's stops. */
+  origin: string
   headsign: string
   startDate: string
   position: PositionView | null
@@ -318,6 +320,7 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
       number: update.vehicle?.label ?? trip.shortName,
       tripId,
       routeLongName: routeById.get(trip.routeId)?.longName ?? "",
+      origin: stopById.get(schedule[0]?.[1] ?? "")?.name ?? "",
       headsign: trip.headsign,
       startDate,
       position,
@@ -340,6 +343,7 @@ export function toTrainViews(feeds: CanonicalFeeds): Array<TrainView> {
       number: vehicle.vehicle?.label ?? key,
       tripId: null,
       routeLongName: "",
+      origin: "",
       headsign: "",
       startDate: "",
       position: {
